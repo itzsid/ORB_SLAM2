@@ -115,6 +115,9 @@ public:
 
     void Reset();
 
+    // Added by @itzsid
+    void SetLoopCloseFlag(bool mbLoopCloseFlag);
+
 protected:
 
     // Main tracking function. It is independent of the input sensor.
@@ -214,6 +217,8 @@ protected:
     bool mbRGB;
 
     list<MapPoint*> mlpTemporalPoints;
+
+    bool mbLoopClose; // Added by @itzsid
 };
 
 } //namespace ORB_SLAM

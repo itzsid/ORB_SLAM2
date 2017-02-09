@@ -46,7 +46,8 @@ namespace ORB_SLAM2
 Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys),
-    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
+    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0),
+    mbLoopClose(true) // mbLoopClose() added by @itzsid
 {
     // Load camera parameters from settings file
 
@@ -152,6 +153,12 @@ void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
 {
     mpLocalMapper=pLocalMapper;
 }
+
+// Added by @itzsid
+void Tracking::SetLoopCloseFlag(bool mbLoopCloseFlag){
+  mbLoopClose = mbLoopCloseFlag;
+}
+//----------------
 
 void Tracking::SetLoopClosing(LoopClosing *pLoopClosing)
 {
@@ -1516,7 +1523,8 @@ void Tracking::Reset()
 
     // Reset Loop Closing
     cout << "Reseting Loop Closing...";
-    mpLoopClosing->RequestReset();
+    if(mbLoopClose)
+      mpLoopClosing->RequestReset();
     cout << " done" << endl;
 
     // Clear BoW Database

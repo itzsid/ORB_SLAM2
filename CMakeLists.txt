@@ -35,9 +35,14 @@ find_package(Pangolin REQUIRED)
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
+include
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 )
+
+message("Eigen Include dirs: ${EIGEN3_INCLUDE_DIR}")
+
+message("Pangolin Include dirs: ${Pangolin_INCLUDE_DIRS}")
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 

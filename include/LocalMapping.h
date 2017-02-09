@@ -72,6 +72,9 @@ public:
         return mlNewKeyFrames.size();
     }
 
+    // Added by @itzsid
+    void SetLoopCloseFlag(bool mbLoopCloseFlag);
+
 protected:
 
     bool CheckNewKeyFrames();
@@ -121,6 +124,8 @@ protected:
 
     bool mbAcceptKeyFrames;
     std::mutex mMutexAccept;
+
+    bool mbLoopClose; // Added by @itzsid
 };
 
 } //namespace ORB_SLAM
