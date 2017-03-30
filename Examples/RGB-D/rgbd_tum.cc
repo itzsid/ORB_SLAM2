@@ -72,51 +72,51 @@ int main(int argc, char **argv)
     cout << "Start processing sequence ..." << endl;
     cout << "Images in the sequence: " << nImages << endl << endl;
 
-    // Main loop
-    cv::Mat imRGB, imD;
-    for(int ni=0; ni<nImages; ni++)
-    {
-        // Read image and depthmap from file
-        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
-        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
-        double tframe = vTimestamps[ni];
+//    // Main loop
+//    cv::Mat imRGB, imD;
+//    for(int ni=0; ni<nImages; ni++)
+//    {
+//        // Read image and depthmap from file
+//        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
+//        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
+//        double tframe = vTimestamps[ni];
 
-        if(imRGB.empty())
-        {
-            cerr << endl << "Failed to load image at: "
-                 << string(argv[3]) << "/" << vstrImageFilenamesRGB[ni] << endl;
-            return 1;
-        }
+//        if(imRGB.empty())
+//        {
+//            cerr << endl << "Failed to load image at: "
+//                 << string(argv[3]) << "/" << vstrImageFilenamesRGB[ni] << endl;
+//            return 1;
+//        }
 
-#ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-#endif
+//#ifdef COMPILEDWITHC11
+//        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+//#else
+//        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+//#endif
 
-        // Pass the image to the SLAM system
-        SLAM.TrackRGBD(imRGB,imD,tframe);
+//        // Pass the image to the SLAM system
+//        SLAM.TrackRGBD(imRGB,imD,tframe);
 
-#ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-#endif
+//#ifdef COMPILEDWITHC11
+//        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+//#else
+//        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+//#endif
 
-        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+//        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 
-        vTimesTrack[ni]=ttrack;
+//        vTimesTrack[ni]=ttrack;
 
-        // Wait to load the next frame
-        double T=0;
-        if(ni<nImages-1)
-            T = vTimestamps[ni+1]-tframe;
-        else if(ni>0)
-            T = tframe-vTimestamps[ni-1];
+//        // Wait to load the next frame
+//        double T=0;
+//        if(ni<nImages-1)
+//            T = vTimestamps[ni+1]-tframe;
+//        else if(ni>0)
+//            T = tframe-vTimestamps[ni-1];
 
-        if(ttrack<T)
-            usleep((T-ttrack)*1e6);
-    }
+//        if(ttrack<T)
+//            usleep((T-ttrack)*1e6);
+//    }
 
     // Stop all threads
     SLAM.Shutdown();
@@ -133,8 +133,8 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveTrajectoryTUM("CameraTrajectory.txt");
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");   
+  //  SLAM.SaveTrajectoryTUM("CameraTrajectory.txt");
+    //SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
 
     return 0;
 }
