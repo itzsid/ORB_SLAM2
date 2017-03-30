@@ -31,6 +31,9 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 find_package(OpenCV 2.4.3 REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(GTSAM QUIET)
+link_directories(${GTSAM_LIBRARY_DIRS})
+
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -38,6 +41,7 @@ ${PROJECT_SOURCE_DIR}/include
 include
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
+${GTSAM_INCLUDE_DIR}
 )
 
 message("Eigen Include dirs: ${EIGEN3_INCLUDE_DIR}")
@@ -74,6 +78,7 @@ ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+gtsam
 )
 
 # Build examples

@@ -36,6 +36,9 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
+// GTSAM
+#include <gtsam/inference/Symbol.h>
+
 namespace ORB_SLAM2
 {
 
@@ -45,6 +48,7 @@ class Map;
 class Tracking;
 class LocalMapping;
 class LoopClosing;
+
 
 class System
 {
@@ -70,7 +74,8 @@ public:
     // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Input depthmap: Float (CV_32F).
     // Returns the camera pose (empty if tracking fails).
-    cv::Mat TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp);
+    pair<cv::Mat, bool> TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, gtsam::Key key = gtsam::Symbol('x', 999999));
+    tuple<gtsam::Key, gtsam::Key, cv::Mat> GetLoopClosure();
 
     // Proccess the given monocular frame
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -111,6 +116,8 @@ public:
     // TODO: Save/Load functions
     // SaveMap(const string &filename);
     // LoadMap(const string &filename);
+
+    bool bUseLoopClosure_;
 
 private:
 

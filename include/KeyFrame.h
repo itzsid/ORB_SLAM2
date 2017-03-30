@@ -29,6 +29,7 @@
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
 
+#include <gtsam/inference/Symbol.h>
 #include <mutex>
 
 
@@ -187,8 +188,7 @@ public:
     const int mnMaxX;
     const int mnMaxY;
     const cv::Mat mK;
-
-
+    gtsam::Key key_;
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:
 

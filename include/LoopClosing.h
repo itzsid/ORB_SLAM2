@@ -33,6 +33,15 @@
 #include <mutex>
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
+
+// Loop closure structure
+typedef struct LoopClosureStruct{
+  gtsam::Key key1;
+  gtsam::Key key2;
+  cv::Mat mat; // relative pose of key2 in key1's frame
+} LoopClosure;
+
+
 namespace ORB_SLAM2
 {
 
@@ -80,6 +89,13 @@ public:
 
     bool isFinished();
 
+    bool loopClosureRetreived_;
+    void setLoopClosureRetrievedToTrue();
+    void setLoopClosureRetrievedToFalse();
+    bool LoopClosureIsRetrieved();
+    LoopClosure loopClosure_;
+
+
 protected:
 
     bool CheckNewKeyFrames();
@@ -126,7 +142,10 @@ protected:
     std::vector<MapPoint*> mvpCurrentMatchedPoints;
     std::vector<MapPoint*> mvpLoopMapPoints;
     cv::Mat mScw;
+    cv::Mat mScm;
     g2o::Sim3 mg2oScw;
+    gtsam::Key currentKey;
+    gtsam::Key matchedKey;
 
     long unsigned int mLastLoopKFid;
 
