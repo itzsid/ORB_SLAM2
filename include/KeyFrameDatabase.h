@@ -54,6 +54,9 @@ public:
    // Loop Detection
    std::vector<KeyFrame *> DetectLoopCandidates(KeyFrame* pKF, float minScore);
 
+   // Inter robot loop closure detection -- added by @itzsid
+   std::vector<KeyFrame*> DetectLoopCandidatesInterRobot(const DBoW2::BowVector& keyFrameBoWVec, int mnId,  float minScore);
+
    // Relocalization
    std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F);
 

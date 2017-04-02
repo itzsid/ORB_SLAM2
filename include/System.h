@@ -32,6 +32,7 @@
 #include "Map.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
+#include "LoopClosingInterRobot.h"
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
 #include "Viewer.h"
@@ -48,6 +49,7 @@ class Map;
 class Tracking;
 class LocalMapping;
 class LoopClosing;
+class LoopClosingInterRobot;
 
 
 class System
@@ -63,7 +65,7 @@ public:
 public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
-    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true, const bool bUseLoopClosure = true);
+    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true, const bool bUseLoopClosure = true, const bool bUseInterRobotLoopCloser = false, int robotID = 0, char robotName = 'a');
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -117,7 +119,13 @@ public:
     // SaveMap(const string &filename);
     // LoadMap(const string &filename);
 
+    void ResetAndInitialize(cv::Mat startingPose);
+
     bool bUseLoopClosure_;
+    bool bUseInterRobotLoopCloser_;
+
+    int robotID_;
+    char robotName_;
 
 private:
 
@@ -145,6 +153,8 @@ private:
     // a pose graph optimization and full bundle adjustment (in a new thread) afterwards.
     LoopClosing* mpLoopCloser;
 
+    LoopClosingInterRobot* mpLoopCloserInterRobot;
+
     // The viewer draws the map and the current camera pose. It uses Pangolin.
     Viewer* mpViewer;
 
@@ -155,6 +165,7 @@ private:
     // The Tracking thread "lives" in the main execution thread that creates the System object.
     std::thread* mptLocalMapping;
     std::thread* mptLoopClosing;
+    std::thread* mptLoopClosingInterRobotKeyFramePublisher;
     std::thread* mptViewer;
 
     // Reset flag

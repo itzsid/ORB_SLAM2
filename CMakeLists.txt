@@ -34,6 +34,13 @@ find_package(Pangolin REQUIRED)
 find_package(GTSAM QUIET)
 link_directories(${GTSAM_LIBRARY_DIRS})
 
+# Build with ROS
+find_package(roscpp QUIET)
+find_package(std_msgs QUIET)
+find_package(cv_bridge QUIET)
+find_package(sensor_msgs QUIET)
+find_package(distributed_mapper_msgs QUIET)
+include_directories(${roscpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS} ${distributed_mapper_msgs_INCLUDE_DIRS} ${cv_bridge_INCLUDE_DIRS})
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -55,6 +62,7 @@ src/System.cc
 src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
+src/LoopClosingInterRobot.cc
 src/ORBextractor.cc
 src/ORBmatcher.cc
 src/FrameDrawer.cc
@@ -79,6 +87,8 @@ ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 gtsam
+${roscpp_LIBRARIES} ${std_msgs_LIBRARIES}
+${cv_bridge_LIBRARIES} ${sensor_msgs_LIBRARIES}
 )
 
 # Build examples

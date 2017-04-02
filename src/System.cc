@@ -30,8 +30,8 @@ namespace ORB_SLAM2
 {
 
   System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-                 const bool bUseViewer, const bool bUseLoopClosure):mSensor(sensor),mbReset(false),mbActivateLocalizationMode(false),
-    mbDeactivateLocalizationMode(false), bUseLoopClosure_(bUseLoopClosure)
+                 const bool bUseViewer, const bool bUseLoopClosure, const bool bUseInterRobotLoopCloser, int robotID, char robotName):mSensor(sensor),mbReset(false),mbActivateLocalizationMode(false),
+    mbDeactivateLocalizationMode(false), bUseLoopClosure_(bUseLoopClosure), bUseInterRobotLoopCloser_(bUseInterRobotLoopCloser), robotID_(robotID), robotName_(robotName)
   {
     // Output welcome message
     cout << endl <<
@@ -71,6 +71,7 @@ namespace ORB_SLAM2
       }
     cout << "Vocabulary loaded!" << endl << endl;
 
+
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
@@ -96,6 +97,12 @@ namespace ORB_SLAM2
         mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
       }
 
+    //Initialize the Loop Closing thread and launch
+    if(bUseInterRobotLoopCloser){
+        mpLoopCloserInterRobot = new LoopClosingInterRobot(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR, robotID_, robotName_);
+        mptLoopClosingInterRobotKeyFramePublisher = new thread(&ORB_SLAM2::LoopClosingInterRobot::Publish, mpLoopCloserInterRobot);
+      }
+
     //Initialize the Viewer thread and launch
     mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile);
     if(bUseViewer)
@@ -107,14 +114,24 @@ namespace ORB_SLAM2
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
     mpTracker->SetLoopCloseFlag(bUseLoopClosure);
+    mpTracker->SetLoopClosingInterRobot(mpLoopCloserInterRobot);
+    mpTracker->SetLoopCloseInterRobotFlag(bUseInterRobotLoopCloser);
 
     mpLocalMapper->SetTracker(mpTracker);
     mpLocalMapper->SetLoopCloser(mpLoopCloser);
     mpLocalMapper->SetLoopCloseFlag(bUseLoopClosure);
+    mpLocalMapper->SetLoopCloserInterRobot(mpLoopCloserInterRobot);
+    mpLocalMapper->SetLoopCloseInterRobotFlag(bUseInterRobotLoopCloser);
+
 
     if(bUseLoopClosure){
         mpLoopCloser->SetTracker(mpTracker);
         mpLoopCloser->SetLocalMapper(mpLocalMapper);
+      }
+
+    if(bUseInterRobotLoopCloser){
+        mpLoopCloserInterRobot->SetTracker(mpTracker);
+        mpLoopCloserInterRobot->SetLocalMapper(mpLocalMapper);
       }
   }
 
@@ -161,6 +178,12 @@ namespace ORB_SLAM2
     }
 
     return mpTracker->GrabImageStereo(imLeft,imRight,timestamp);
+  }
+
+  void System::ResetAndInitialize(cv::Mat startingPose){
+    mpTracker->ResetAndInitialize(startingPose);
+    cout << "Reset done" << endl;
+    //mpTracker->StereoInitialization(startingPose);
   }
 
   pair<cv::Mat, bool> System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, gtsam::Key key)

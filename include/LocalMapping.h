@@ -35,6 +35,7 @@ namespace ORB_SLAM2
 
 class Tracking;
 class LoopClosing;
+class LoopClosingInterRobot;
 class Map;
 
 class LocalMapping
@@ -43,6 +44,7 @@ public:
     LocalMapping(Map* pMap, const float bMonocular);
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
+    void SetLoopCloserInterRobot(LoopClosingInterRobot* pLoopCloserInterRobot);
 
     void SetTracker(Tracking* pTracker);
 
@@ -74,6 +76,7 @@ public:
 
     // Added by @itzsid
     void SetLoopCloseFlag(bool mbLoopCloseFlag);
+    void SetLoopCloseInterRobotFlag(bool mbLoopCloseInterRobotFlag);
 
 protected:
 
@@ -105,6 +108,8 @@ protected:
     Map* mpMap;
 
     LoopClosing* mpLoopCloser;
+    LoopClosingInterRobot* mpLoopCloserInterRobot;
+
     Tracking* mpTracker;
 
     std::list<KeyFrame*> mlNewKeyFrames;
@@ -126,6 +131,7 @@ protected:
     std::mutex mMutexAccept;
 
     bool mbLoopClose; // Added by @itzsid
+    bool mbLoopCloseInterRobot; // Added by @itzsid
 };
 
 } //namespace ORB_SLAM

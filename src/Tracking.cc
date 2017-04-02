@@ -158,12 +158,22 @@ void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
 void Tracking::SetLoopCloseFlag(bool mbLoopCloseFlag){
   mbLoopClose = mbLoopCloseFlag;
 }
+void Tracking::SetLoopCloseInterRobotFlag(bool mbLoopCloseInterRobotFlag){
+  mbLoopCloseInterRobot = mbLoopCloseInterRobotFlag;
+}
+
 //----------------
 
 void Tracking::SetLoopClosing(LoopClosing *pLoopClosing)
 {
     mpLoopClosing=pLoopClosing;
 }
+
+void Tracking::SetLoopClosingInterRobot(LoopClosingInterRobot *pLoopClosingInterRobot)
+{
+    mpLoopClosingInterRobot=pLoopClosingInterRobot;
+}
+
 
 void Tracking::SetViewer(Viewer *pViewer)
 {
@@ -519,6 +529,60 @@ void Tracking::StereoInitialization()
     {
         // Set Frame pose to the origin
         mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+
+        // Create KeyFrame
+        KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+
+        // Insert KeyFrame in the map
+        mpMap->AddKeyFrame(pKFini);
+
+        // Create MapPoints and asscoiate to KeyFrame
+        for(int i=0; i<mCurrentFrame.N;i++)
+        {
+            float z = mCurrentFrame.mvDepth[i];
+            if(z>0)
+            {
+                cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
+                MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpMap);
+                pNewMP->AddObservation(pKFini,i);
+                pKFini->AddMapPoint(pNewMP,i);
+                pNewMP->ComputeDistinctiveDescriptors();
+                pNewMP->UpdateNormalAndDepth();
+                mpMap->AddMapPoint(pNewMP);
+
+                mCurrentFrame.mvpMapPoints[i]=pNewMP;
+            }
+        }
+
+        cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
+
+        mpLocalMapper->InsertKeyFrame(pKFini);
+
+        mLastFrame = Frame(mCurrentFrame);
+        mnLastKeyFrameId=mCurrentFrame.mnId;
+        mpLastKeyFrame = pKFini;
+
+        mvpLocalKeyFrames.push_back(pKFini);
+        mvpLocalMapPoints=mpMap->GetAllMapPoints();
+        mpReferenceKF = pKFini;
+        mCurrentFrame.mpReferenceKF = pKFini;
+
+        mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
+
+        mpMap->mvpKeyFrameOrigins.push_back(pKFini);
+
+        mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
+
+        mState=OK;
+    }
+}
+
+void Tracking::StereoInitialization(cv::Mat startingPose)
+{
+    if(mCurrentFrame.N>500)
+    {
+        // Set Frame pose to the origin
+        mCurrentFrame.SetPose(startingPose); // pose of the world in camera's frame
 
         // Create KeyFrame
         KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
@@ -1527,6 +1591,12 @@ void Tracking::Reset()
       mpLoopClosing->RequestReset();
     cout << " done" << endl;
 
+
+    cout << "Reseting Loop Closing InterRobot...";
+    if(mbLoopCloseInterRobot)
+      mpLoopClosingInterRobot->RequestReset();
+    cout << " done" << endl;
+
     // Clear BoW Database
     cout << "Reseting Database...";
     mpKeyFrameDB->clear();
@@ -1552,6 +1622,51 @@ void Tracking::Reset()
 
     mpViewer->Release();
 }
+
+void Tracking::ResetAndInitialize(cv::Mat startingPose)
+{
+    // Reset Local Mapping
+    cout << "Reseting Local Mapper...";
+    mpLocalMapper->RequestReset();
+    cout << " done" << endl;
+
+    // Reset Loop Closing
+    cout << "Reseting Loop Closing...";
+    if(mbLoopClose)
+      mpLoopClosing->RequestReset();
+    cout << " done" << endl;
+
+    cout << "Reseting Loop Closing InterRobot...";
+    if(mbLoopCloseInterRobot)
+      mpLoopClosingInterRobot->RequestReset();
+    cout << " done" << endl;
+
+    // Clear BoW Database
+    cout << "Reseting Database...";
+    mpKeyFrameDB->clear();
+    cout << " done" << endl;
+
+    // Clear Map (this erase MapPoints and KeyFrames)
+    mpMap->clear();
+
+    KeyFrame::nNextId = 0;
+    Frame::nNextId = 0;
+    mState = NO_IMAGES_YET;
+
+    if(mpInitializer)
+    {
+        delete mpInitializer;
+        mpInitializer = static_cast<Initializer*>(NULL);
+    }
+
+    mlRelativeFramePoses.clear();
+    mlpReferences.clear();
+    mlFrameTimes.clear();
+    mlbLost.clear();
+
+    StereoInitialization(startingPose);
+}
+
 
 void Tracking::ChangeCalibration(const string &strSettingPath)
 {

@@ -143,8 +143,11 @@ public:
 
     // Variables used by the keyframe database
     long unsigned int mnLoopQuery;
+    long unsigned int mnLoopQueryInterRobot; // added by @itzsid
     int mnLoopWords;
+    int mnLoopWordsInterRobot; // added by @itzsid
     float mLoopScore;
+    float mLoopScoreInterRobot;  // added by @itzsid
     long unsigned int mnRelocQuery;
     int mnRelocWords;
     float mRelocScore;

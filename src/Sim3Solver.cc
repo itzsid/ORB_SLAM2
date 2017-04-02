@@ -34,9 +34,9 @@ namespace ORB_SLAM2
 {
 
 
-Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> &vpMatched12, const bool bFixScale):
+  Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> &vpMatched12, const bool bFixScale):
     mnIterations(0), mnBestInliers(0), mbFixScale(bFixScale)
-{
+  {
     mpKF1 = pKF1;
     mpKF2 = pKF2;
 
@@ -60,23 +60,23 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
 
     size_t idx=0;
     for(int i1=0; i1<mN1; i1++)
-    {
+      {
         if(vpMatched12[i1])
-        {
+          {
             MapPoint* pMP1 = vpKeyFrameMP1[i1];
             MapPoint* pMP2 = vpMatched12[i1];
 
             if(!pMP1)
-                continue;
+              continue;
 
             if(pMP1->isBad() || pMP2->isBad())
-                continue;
+              continue;
 
             int indexKF1 = pMP1->GetIndexInKeyFrame(pKF1);
             int indexKF2 = pMP2->GetIndexInKeyFrame(pKF2);
 
             if(indexKF1<0 || indexKF2<0)
-                continue;
+              continue;
 
             const cv::KeyPoint &kp1 = pKF1->mvKeysUn[indexKF1];
             const cv::KeyPoint &kp2 = pKF2->mvKeysUn[indexKF2];
@@ -99,8 +99,8 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
 
             mvAllIndices.push_back(idx);
             idx++;
-        }
-    }
+          }
+      }
 
     mK1 = pKF1->mK;
     mK2 = pKF2->mK;
@@ -109,13 +109,100 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
     FromCameraToImage(mvX3Dc2,mvP2im2,mK2);
 
     SetRansacParameters();
-}
+  }
 
-void Sim3Solver::SetRansacParameters(double probability, int minInliers, int maxIterations)
-{
+  Sim3Solver::Sim3Solver(const vector<cv::Mat>& mapPoints,
+                         const vector<cv::KeyPoint>& keypoints,
+                         vector<int> indices,
+                         const vector<float>& mvLevelSigma2,
+                         cv::Mat pose, cv::Mat K,
+                         KeyFrame *pKF2,
+                         const vector<MapPoint *> &vpMatched12,
+                         const bool bFixScale):
+    mnIterations(0), mnBestInliers(0), mbFixScale(bFixScale)
+  {
+    mpKF2 = pKF2;
+    mN1 = vpMatched12.size();
+
+    mvpMapPoints1.reserve(mN1);
+    mvpMapPoints2.reserve(mN1);
+    mvpMatches12 = vpMatched12;
+    mvnIndices1.reserve(mN1);
+    mvX3Dc1.reserve(mN1);
+    mvX3Dc2.reserve(mN1);
+
+    //    cv::Mat Rcw1 = pKF1->GetRotation();
+    //    cv::Mat tcw1 = pKF1->GetTranslation();
+    cv::Mat Rcw1 = pose.rowRange(0,3).colRange(0,3).clone();
+    cv::Mat tcw1 = pose.rowRange(0,3).col(3).clone();
+    cv::Mat Rcw2 = pKF2->GetRotation();
+    cv::Mat tcw2 = pKF2->GetTranslation();
+
+    mvAllIndices.reserve(mN1);
+
+    size_t idx=0;
+    for(int i1=0; i1<mN1; i1++)
+      {
+        if(vpMatched12[i1])
+          {
+            MapPoint* pMP2 = vpMatched12[i1];
+
+            if(indices.at(i1) == -1)
+              continue;
+
+            if(pMP2->isBad())
+              continue;
+
+            int indexKF1 = indices.at(i1);
+            //int indexKF1 = pMP1->GetIndexInKeyFrame(pKF1);
+            int indexKF2 = pMP2->GetIndexInKeyFrame(pKF2);
+
+            if(indexKF1<0 || indexKF2<0)
+              continue;
+
+            const cv::KeyPoint &kp1 = keypoints[indexKF1];
+            //const cv::KeyPoint &kp1 = pKF1->mvKeysUn[indexKF1];
+            const cv::KeyPoint &kp2 = pKF2->mvKeysUn[indexKF2];
+
+            const float sigmaSquare1 = mvLevelSigma2[kp1.octave];
+            //const float sigmaSquare1 = pKF1->mvLevelSigma2[kp1.octave];
+            const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
+
+            mvnMaxError1.push_back(9.210*sigmaSquare1);
+            mvnMaxError2.push_back(9.210*sigmaSquare2);
+
+            mvpMapPoints1.push_back(pMP2);
+            mvpMapPoints2.push_back(pMP2);
+            mvnIndices1.push_back(i1);
+
+            cv::Mat X3D1w = mapPoints.at(i1);
+            //cv::Mat X3D1w = pMP1->GetWorldPos();
+            mvX3Dc1.push_back(Rcw1*X3D1w+tcw1);
+
+            cv::Mat X3D2w = pMP2->GetWorldPos();
+            mvX3Dc2.push_back(Rcw2*X3D2w+tcw2);
+
+            mvAllIndices.push_back(idx);
+            idx++;
+          }
+      }
+
+    mK1 = K;
+    //    mK1 = pKF1->mK;
+    mK2 = pKF2->mK;
+
+    FromCameraToImage(mvX3Dc1,mvP1im1,mK1);
+    FromCameraToImage(mvX3Dc2,mvP2im2,mK2);
+
+    SetRansacParameters(idx, 0.99, 6, 300);
+  }
+
+
+  void Sim3Solver::SetRansacParameters(double probability, int minInliers, int maxIterations)
+  {
     mRansacProb = probability;
     mRansacMinInliers = minInliers;
-    mRansacMaxIts = maxIterations;    
+    mRansacMaxIts = maxIterations;
 
     N = mvpMapPoints1.size(); // number of correspondences
 
@@ -128,26 +215,53 @@ void Sim3Solver::SetRansacParameters(double probability, int minInliers, int max
     int nIterations;
 
     if(mRansacMinInliers==N)
-        nIterations=1;
+      nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));
+      nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
 
     mnIterations = 0;
-}
+  }
 
-cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers)
-{
+
+  void Sim3Solver::SetRansacParameters(int nrPoints, double probability, int minInliers, int maxIterations)
+  {
+    mRansacProb = probability;
+    mRansacMinInliers = minInliers;
+    mRansacMaxIts = maxIterations;
+
+    N = nrPoints; // number of correspondences
+
+    mvbInliersi.resize(N);
+
+    // Adjust Parameters according to number of correspondences
+    float epsilon = (float)mRansacMinInliers/N;
+
+    // Set RANSAC iterations according to probability, epsilon, and max iterations
+    int nIterations;
+
+    if(mRansacMinInliers==N)
+      nIterations=1;
+    else
+      nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));
+
+    mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
+
+    mnIterations = 0;
+  }
+
+  cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers)
+  {
     bNoMore = false;
     vbInliers = vector<bool>(mN1,false);
     nInliers=0;
 
     if(N<mRansacMinInliers)
-    {
+      {
         bNoMore = true;
         return cv::Mat();
-    }
+      }
 
     vector<size_t> vAvailableIndices;
 
@@ -156,7 +270,7 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
 
     int nCurrentIterations = 0;
     while(mnIterations<mRansacMaxIts && nCurrentIterations<nIterations)
-    {
+      {
         nCurrentIterations++;
         mnIterations++;
 
@@ -164,7 +278,7 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
 
         // Get min set of points
         for(short i = 0; i < 3; ++i)
-        {
+          {
             int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
 
             int idx = vAvailableIndices[randi];
@@ -174,14 +288,14 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
 
             vAvailableIndices[randi] = vAvailableIndices.back();
             vAvailableIndices.pop_back();
-        }
+          }
 
         ComputeSim3(P3Dc1i,P3Dc2i);
 
         CheckInliers();
 
         if(mnInliersi>=mnBestInliers)
-        {
+          {
             mvbBestInliers = mvbInliersi;
             mnBestInliers = mnInliersi;
             mBestT12 = mT12i.clone();
@@ -190,41 +304,41 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
             mBestScale = ms12i;
 
             if(mnInliersi>mRansacMinInliers)
-            {
+              {
                 nInliers = mnInliersi;
                 for(int i=0; i<N; i++)
-                    if(mvbInliersi[i])
-                        vbInliers[mvnIndices1[i]] = true;
+                  if(mvbInliersi[i])
+                    vbInliers[mvnIndices1[i]] = true;
                 return mBestT12;
-            }
-        }
-    }
+              }
+          }
+      }
 
     if(mnIterations>=mRansacMaxIts)
-        bNoMore=true;
+      bNoMore=true;
 
     return cv::Mat();
-}
+  }
 
-cv::Mat Sim3Solver::find(vector<bool> &vbInliers12, int &nInliers)
-{
+  cv::Mat Sim3Solver::find(vector<bool> &vbInliers12, int &nInliers)
+  {
     bool bFlag;
     return iterate(mRansacMaxIts,bFlag,vbInliers12,nInliers);
-}
+  }
 
-void Sim3Solver::ComputeCentroid(cv::Mat &P, cv::Mat &Pr, cv::Mat &C)
-{
+  void Sim3Solver::ComputeCentroid(cv::Mat &P, cv::Mat &Pr, cv::Mat &C)
+  {
     cv::reduce(P,C,1,CV_REDUCE_SUM);
     C = C/P.cols;
 
     for(int i=0; i<P.cols; i++)
-    {
+      {
         Pr.col(i)=P.col(i)-C;
-    }
-}
+      }
+  }
 
-void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
-{
+  void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
+  {
     // Custom implementation of:
     // Horn 1987, Closed-form solution of absolute orientataion using unit quaternions
 
@@ -260,9 +374,9 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     N44 = -M.at<float>(0,0)-M.at<float>(1,1)+M.at<float>(2,2);
 
     N = (cv::Mat_<float>(4,4) << N11, N12, N13, N14,
-                                 N12, N22, N23, N24,
-                                 N13, N23, N33, N34,
-                                 N14, N24, N34, N44);
+         N12, N22, N23, N24,
+         N13, N23, N33, N34,
+         N14, N24, N34, N44);
 
 
     // Step 4: Eigenvector of the highest eigenvalue
@@ -290,7 +404,7 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     // Step 6: Scale
 
     if(!mbFixScale)
-    {
+      {
         double nom = Pr1.dot(P3);
         cv::Mat aux_P3(P3.size(),P3.type());
         aux_P3=P3;
@@ -298,17 +412,17 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
         double den = 0;
 
         for(int i=0; i<aux_P3.rows; i++)
-        {
+          {
             for(int j=0; j<aux_P3.cols; j++)
-            {
+              {
                 den+=aux_P3.at<float>(i,j);
-            }
-        }
+              }
+          }
 
         ms12i = nom/den;
-    }
+      }
     else
-        ms12i = 1.0f;
+      ms12i = 1.0f;
 
     // Step 7: Translation
 
@@ -334,11 +448,11 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     sRinv.copyTo(mT21i.rowRange(0,3).colRange(0,3));
     cv::Mat tinv = -sRinv*mt12i;
     tinv.copyTo(mT21i.rowRange(0,3).col(3));
-}
+  }
 
 
-void Sim3Solver::CheckInliers()
-{
+  void Sim3Solver::CheckInliers()
+  {
     vector<cv::Mat> vP1im2, vP2im1;
     Project(mvX3Dc2,vP2im1,mT12i,mK1);
     Project(mvX3Dc1,vP1im2,mT21i,mK2);
@@ -346,7 +460,7 @@ void Sim3Solver::CheckInliers()
     mnInliersi=0;
 
     for(size_t i=0; i<mvP1im1.size(); i++)
-    {
+      {
         cv::Mat dist1 = mvP1im1[i]-vP2im1[i];
         cv::Mat dist2 = vP1im2[i]-mvP2im2[i];
 
@@ -354,33 +468,33 @@ void Sim3Solver::CheckInliers()
         const float err2 = dist2.dot(dist2);
 
         if(err1<mvnMaxError1[i] && err2<mvnMaxError2[i])
-        {
+          {
             mvbInliersi[i]=true;
             mnInliersi++;
-        }
+          }
         else
-            mvbInliersi[i]=false;
-    }
-}
+          mvbInliersi[i]=false;
+      }
+  }
 
 
-cv::Mat Sim3Solver::GetEstimatedRotation()
-{
+  cv::Mat Sim3Solver::GetEstimatedRotation()
+  {
     return mBestRotation.clone();
-}
+  }
 
-cv::Mat Sim3Solver::GetEstimatedTranslation()
-{
+  cv::Mat Sim3Solver::GetEstimatedTranslation()
+  {
     return mBestTranslation.clone();
-}
+  }
 
-float Sim3Solver::GetEstimatedScale()
-{
+  float Sim3Solver::GetEstimatedScale()
+  {
     return mBestScale;
-}
+  }
 
-void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv::Mat Tcw, cv::Mat K)
-{
+  void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv::Mat Tcw, cv::Mat K)
+  {
     cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);
     cv::Mat tcw = Tcw.rowRange(0,3).col(3);
     const float &fx = K.at<float>(0,0);
@@ -392,18 +506,18 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
     vP2D.reserve(vP3Dw.size());
 
     for(size_t i=0, iend=vP3Dw.size(); i<iend; i++)
-    {
+      {
         cv::Mat P3Dc = Rcw*vP3Dw[i]+tcw;
         const float invz = 1/(P3Dc.at<float>(2));
         const float x = P3Dc.at<float>(0)*invz;
         const float y = P3Dc.at<float>(1)*invz;
 
         vP2D.push_back((cv::Mat_<float>(2,1) << fx*x+cx, fy*y+cy));
-    }
-}
+      }
+  }
 
-void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat> &vP2D, cv::Mat K)
-{
+  void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat> &vP2D, cv::Mat K)
+  {
     const float &fx = K.at<float>(0,0);
     const float &fy = K.at<float>(1,1);
     const float &cx = K.at<float>(0,2);
@@ -413,13 +527,13 @@ void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat>
     vP2D.reserve(vP3Dc.size());
 
     for(size_t i=0, iend=vP3Dc.size(); i<iend; i++)
-    {
+      {
         const float invz = 1/(vP3Dc[i].at<float>(2));
         const float x = vP3Dc[i].at<float>(0)*invz;
         const float y = vP3Dc[i].at<float>(1)*invz;
 
         vP2D.push_back((cv::Mat_<float>(2,1) << fx*x+cx, fy*y+cy));
-    }
-}
+      }
+  }
 
 } //namespace ORB_SLAM

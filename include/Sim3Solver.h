@@ -38,7 +38,18 @@ public:
 
     Sim3Solver(KeyFrame* pKF1, KeyFrame* pKF2, const std::vector<MapPoint*> &vpMatched12, const bool bFixScale = true);
 
+    // Another constructor for loop closure across robots
+    Sim3Solver(const vector<cv::Mat>& mapPoints,
+                           const vector<cv::KeyPoint>& keypoints,
+                           vector<int> indices,
+                           const vector<float>& mvLevelSigma2,
+                            cv::Mat pose, cv::Mat K,
+                           KeyFrame *pKF2,
+                           const vector<MapPoint *> &vpMatched12,
+                           const bool bFixScale);
+
     void SetRansacParameters(double probability = 0.99, int minInliers = 6 , int maxIterations = 300);
+    void SetRansacParameters(int nrPoints, double probability = 0.99, int minInliers = 6 , int maxIterations = 300);
 
     cv::Mat find(std::vector<bool> &vbInliers12, int &nInliers);
 

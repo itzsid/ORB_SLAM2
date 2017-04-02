@@ -48,6 +48,7 @@ class FrameDrawer;
 class Map;
 class LocalMapping;
 class LoopClosing;
+class LoopClosingInterRobot;
 class System;
 
 class Tracking
@@ -64,6 +65,8 @@ public:
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
+    void SetLoopClosingInterRobot(LoopClosingInterRobot* pLoopClosingInterRobot);
+
     void SetViewer(Viewer* pViewer);
 
     // Load new settings
@@ -117,6 +120,13 @@ public:
 
     // Added by @itzsid
     void SetLoopCloseFlag(bool mbLoopCloseFlag);
+    void SetLoopCloseInterRobotFlag(bool mbLoopCloseInterRobotFlag);
+
+
+    // Initialize at a certain pose
+    void StereoInitialization(cv::Mat startingPose);
+
+    void ResetAndInitialize(cv::Mat startingPose);
 
 protected:
 
@@ -156,6 +166,8 @@ protected:
     //Other Thread Pointers
     LocalMapping* mpLocalMapper;
     LoopClosing* mpLoopClosing;
+    LoopClosingInterRobot* mpLoopClosingInterRobot;
+
 
     //ORB
     ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
@@ -219,6 +231,7 @@ protected:
     list<MapPoint*> mlpTemporalPoints;
 
     bool mbLoopClose; // Added by @itzsid
+    bool mbLoopCloseInterRobot; // Added by @itzsid
 };
 
 } //namespace ORB_SLAM

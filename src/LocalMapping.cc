@@ -46,6 +46,16 @@ void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)
     mpLoopCloser = pLoopCloser;
 }
 
+void LocalMapping::SetLoopCloseInterRobotFlag(bool mbLoopCloseInterRobotFlag){
+  mbLoopCloseInterRobot = mbLoopCloseInterRobotFlag;
+}
+//----------------
+
+void LocalMapping::SetLoopCloserInterRobot(LoopClosingInterRobot* pLoopCloserInterRobot)
+{
+    mpLoopCloserInterRobot = pLoopCloserInterRobot;
+}
+
 void LocalMapping::SetTracker(Tracking *pTracker)
 {
     mpTracker=pTracker;
@@ -93,6 +103,9 @@ void LocalMapping::Run()
 
             if(mbLoopClose)
               mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+
+            if(mbLoopCloseInterRobot)
+              mpLoopCloserInterRobot->InsertKeyFrame(mpCurrentKeyFrame);
         }
         else if(Stop())
         {
