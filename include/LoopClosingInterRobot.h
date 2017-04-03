@@ -43,7 +43,8 @@
 
 #include "distributed_mapper_msgs/Keyframe.h" // Keyframe
 #include "distributed_mapper_msgs/Keypoint.h" // Keypoint
-#include "distributed_mapper_msgs/Indices.h" // Keypoint
+#include "distributed_mapper_msgs/Indices.h" // Indices
+#include "distributed_mapper_msgs/Measurement.h" // Measurement
 
 
 // Loop closure structure
@@ -114,7 +115,13 @@ public:
     char robotName_;
     int robotID_;
 
-
+    
+    cv::Mat estimatedR_;
+    cv::Mat estimatedT_;
+    float estimatedS_;
+    char matchedSymbol_;
+    int matchedIndex_;
+    
 protected:
 
     bool CheckNewKeyFrames();
@@ -190,6 +197,9 @@ protected:
     // Publishers and subscribers -- added by @itzsid
     ros::Publisher keyframe_pub_;
     ros::Subscriber keyframe_sub_;
+
+    // Measurement publisher
+    ros::Publisher measurement_pub_;
 
 };
 

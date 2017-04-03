@@ -50,6 +50,7 @@ namespace ORB_SLAM2
 
     // Start the publisher
     keyframe_pub_ = n.advertise<distributed_mapper_msgs::Keyframe>("/keyframe", 1000); // Publish in global space
+    measurement_pub_ = n.advertise<distributed_mapper_msgs::Measurement>("/measurement", 1000); // pubilsh relative pose
 
     // Start the subscriber
     keyframe_sub_ = n.subscribe("/keyframe", 1000, &LoopClosingInterRobot::Subscribe, this); // queue of 1000 keyframes
@@ -163,7 +164,17 @@ namespace ORB_SLAM2
             // In the stereo/RGBD case s=1
             if(ComputeSim3(worldPoints, keypoints, indices, mvLevelSigma2, pose, K, descriptors, mFeatVec, nrMapPoints))
               {
-
+		// Publish it
+	         distributed_mapper_msgs::Measurement measurementMsg; // key frame message
+		 measurementMsg.symbolChr1 = keyframe.symbolChr;
+		 measurementMsg.symbolIndex1 = keyframe.symbolIndex;
+		 measurementMsg.symbolChr2 = matchedSymbol_;
+		 measurementMsg.symbolIndex2 = matchedIndex_;
+		 for(int i =0; i < estimatedR_.rows*estimatedR_.cols; i++)
+		 	measurementMsg.relativeRotation.push_back(estimatedR_.at<float>(i));
+		 for(int i =0; i < estimatedT_.rows*estimatedT_.cols; i++)
+		 	measurementMsg.relativeTranslation.push_back(estimatedT_.at<float>(i));
+		 measurementMsg.relativeScale = estimatedS_;
               }
 
           }
@@ -555,8 +566,14 @@ namespace ORB_SLAM2
                 cv::Mat t = pSolver->GetEstimatedTranslation();
                 const float s = pSolver->GetEstimatedScale();
                 cout << "[LoopClosingInterRobot] Found #Inliers: " << nrInliers  << " with " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
+		estimatedR_ = R;
+		estimatedT_ = t;
+		estimatedS_ = s;
+	        matchedSymbol_ = gtsam::symbolChr(pKF->key_);
+		matchedIndex_ = gtsam::symbolIndex(pKF->key_);
                 bMatch = true;
-                break;
+		break;
+
 
 #if 0
                 matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,7.5);
@@ -646,8 +663,10 @@ namespace ORB_SLAM2
       }
 
 #endif
-
-    return false;
+if(bMatch)
+    return true;
+else
+return false;
 
   }
 
