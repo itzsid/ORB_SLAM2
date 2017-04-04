@@ -501,11 +501,6 @@ namespace ORB_SLAM2
         return false;
       }
 
-
-    mvpEnoughConsistentCandidates = vpCandidateKFs;
-    return true;
-#if 0
-
     // For each loop candidate check consistency with previous loop candidates
     // Each candidate expands a covisibility group (keyframes connected to the loop candidate in the covisibility graph)
     // A group is consistent with a previous group if they share at least a keyframe
@@ -567,13 +562,12 @@ namespace ORB_SLAM2
     // Update Covisibility Consistent Groups
     mvConsistentGroups = vCurrentConsistentGroups;
 
-
     // Add Current Keyframe to database
-    mpKeyFrameDB->add(mpCurrentKF);
+    //mpKeyFrameDB->add(mpCurrentKF);
 
     if(mvpEnoughConsistentCandidates.empty())
       {
-        mpCurrentKF->SetErase();
+       // mpCurrentKF->SetErase();
         return false;
       }
     else
@@ -581,8 +575,6 @@ namespace ORB_SLAM2
         return true;
       }
 
-    mpCurrentKF->SetErase();
-#endif
     return false;
   }
 
@@ -600,7 +592,7 @@ namespace ORB_SLAM2
                                           float mnGridRows, float mnGridCols, int mnScaleLevels, float mfLogScaleFactor,
                                           const std::vector< std::vector <std::vector<size_t> > >& mGrid,
                                           float fx, float fy, float cx, float cy){
-    cout << "Computing Sim3" << endl; fflush(stdout);
+
     // For each consistent loop candidate we try to compute a Sim3
     const int nInitialCandidates = mvpEnoughConsistentCandidates.size();
 
@@ -633,8 +625,6 @@ namespace ORB_SLAM2
             vbDiscarded[i] = true;
             continue;
           }
-
-        cout << "[LoopClosingInterRobot::searchByBow] " << endl;
 
         int nmatches = matcher.SearchByBoWInterRobot(keypoints, mFeatVec, nrMapPoints, indices, descriptors, pKF,vvpMapPointMatches[i]);
         cout << "[LoopClosingInterRobot::computeSim3] #Matches by BoW: " << nmatches << " to candidate: " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
@@ -709,8 +699,6 @@ namespace ORB_SLAM2
                                                pointDescriptors,  mnMinX,  mnMinY,  mnMaxX,  mnMaxY,  mfGridElementWidthInv,  mfGridElementHeightInv,
                                                mnGridRows,  mnGridCols,  mnScaleLevels,  mfLogScaleFactor,  mGrid,
                                                descriptors,   pose,  K, fx,  fy,  cx,  cy,  pKF,vpMapPointMatches,s,R,t,7.5);
-
-
                 // matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,7.5);
 
 
@@ -718,7 +706,6 @@ namespace ORB_SLAM2
                 g2o::Sim3 gScm(Converter::toMatrix3d(R),Converter::toVector3d(t),s);
                 const int nInliers = Optimizer::OptimizeSim3InterRobot(mapPoints, keypoints, indices, mvInvLevelSigma2,
                                                                        pose, K, pKF, vpMapPointMatches, gScm, 10, mbFixScale);
-
                 //const int nInliers = Optimizer::OptimizeSim3(mpCurrentKF, pKF, vpMapPointMatches, gScm, 10, mbFixScale);
 
 
