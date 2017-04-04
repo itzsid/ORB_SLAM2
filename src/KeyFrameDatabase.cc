@@ -39,6 +39,7 @@ namespace ORB_SLAM2
 
   void KeyFrameDatabase::add(KeyFrame *pKF)
   {
+    cout << "Adding keyframe: " << endl;
     unique_lock<mutex> lock(mMutex);
 
     for(DBoW2::BowVector::const_iterator vit= pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
@@ -203,11 +204,11 @@ namespace ORB_SLAM2
     // Search all keyframes that share a word with current keyframes
     {
       unique_lock<mutex> lock(mMutex);
-
+     // cout << "mvInvertedFile.size(): " << mvInvertedFile.size() << endl;
       for(DBoW2::BowVector::const_iterator vit=keyFrameBoWVec.begin(), vend=keyFrameBoWVec.end(); vit != vend; vit++)
         {
           list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
-
+          //cout << "#Keyframes: " << lKFs.size() << endl;
           for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
             {
               KeyFrame* pKFi=*lit;
@@ -257,7 +258,7 @@ namespace ORB_SLAM2
           }
       }
 
-    //cout << endl << "[LoopClosingInterRobot::KeyFrameDatabase]lScoreAndMatch.size(): " << lScoreAndMatch.size()  << endl;
+   // cout << endl << "[LoopClosingInterRobot::KeyFrameDatabase]lScoreAndMatch.size(): " << lScoreAndMatch.size()  << endl;
 
     if(lScoreAndMatch.empty())
       return vector<KeyFrame*>();
@@ -312,7 +313,7 @@ namespace ORB_SLAM2
               }
           }
       }
-    //cout << endl << "[LoopClosingInterRobot::KeyFrameDatabase]vpLoopCandidates.size(): " << vpLoopCandidates.size()  << endl;
+   // cout << endl << "[LoopClosingInterRobot::KeyFrameDatabase]vpLoopCandidates.size(): " << vpLoopCandidates.size()  << endl;
     return vpLoopCandidates;
   }
 

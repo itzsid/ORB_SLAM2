@@ -105,9 +105,49 @@ namespace ORB_SLAM2
                 keypoints.push_back(keypoint); // Push to keypoints
               }
 
+            float mfGridElementWidthInv = keyframe.mfGridElementWidthInv;
+            float mfGridElementHeightInv = keyframe.mfGridElementHeightInv;
+            float mnMinX = keyframe.mnMinX;
+            float mnMinY = keyframe.mnMinY;
+            float mnMaxX = keyframe.mnMaxX;
+            float mnMaxY = keyframe.mnMaxY;
+
+            // Assign features to grid
+            std::vector<std::size_t> mGrid[FRAME_GRID_COLS][FRAME_GRID_ROWS];
+            int N = keypoints.size();
+            int nReserve = 0.5f*N/(FRAME_GRID_COLS*FRAME_GRID_ROWS);
+            for(unsigned int i=0; i<FRAME_GRID_COLS;i++)
+              for (unsigned int j=0; j<FRAME_GRID_ROWS;j++)
+                mGrid[i][j].reserve(nReserve);
+
+            for(int i=0;i<N;i++)
+              {
+                const cv::KeyPoint &kp = keypoints[i];
+                int nGridPosX, nGridPosY;
+
+                nGridPosX = round((kp.pt.x-mnMinX)*mfGridElementWidthInv);
+                nGridPosY = round((kp.pt.y-mnMinY)*mfGridElementHeightInv);
+                //Keypoint's coordinates are undistorted, which could cause to go out of the image
+                if(nGridPosX<0 || nGridPosX>=FRAME_GRID_COLS || nGridPosY<0 || nGridPosY>=FRAME_GRID_ROWS)
+                  continue;
+                mGrid[nGridPosX][nGridPosY].push_back(i);
+              }
+
+            std::vector< std::vector <std::vector<size_t> > > mGridVec;
+            mGridVec.resize(FRAME_GRID_COLS);
+            for(int i=0; i<FRAME_GRID_COLS;i++){
+                mGridVec[i].resize(FRAME_GRID_ROWS);
+                for(int j=0; j<FRAME_GRID_ROWS; j++)
+                  mGridVec[i][j] = mGrid[i][j];
+              }
+
             // Create descriptor mat
             cv_bridge::CvImagePtr descriptorPtr = cv_bridge::toCvCopy(keyframe.desc, sensor_msgs::image_encodings::TYPE_8UC1);
             cv::Mat descriptors = descriptorPtr->image;
+
+            // Create point descriptor mat
+            cv_bridge::CvImagePtr pointDescriptorPtr = cv_bridge::toCvCopy(keyframe.pointDesc, sensor_msgs::image_encodings::TYPE_8UC1);
+            cv::Mat pointDescriptors = pointDescriptorPtr->image;
 
             // Bag of words feature vector
             DBoW2::FeatureVector mFeatVec;
@@ -122,10 +162,15 @@ namespace ORB_SLAM2
             // nrMappoints
             int nrMapPoints = keyframe.nrMapPoints;
 
-            // map point -> feature indices
-            vector<int> indices;
+            // map point -> feature indices, maxDistInvariance, minDistInvariance, point descriptor vec
+            vector<int> indices; vector<float> maxDistInvariance; vector<float> minDistInvariance; vector<cv::Mat> pointDescVec;
             for(int indices_i = 0; indices_i < keyframe.indices.size(); indices_i++){
                 indices.push_back(keyframe.indices.at(indices_i));
+                maxDistInvariance.push_back(keyframe.maxDistInvariance.at(indices_i));
+                minDistInvariance.push_back(keyframe.minDistInvariance.at(indices_i));
+                cv::Mat descriptor(1, 32, CV_8UC1);
+                pointDescriptors.row(indices_i).copyTo(descriptor);
+                pointDescVec.push_back(descriptor);
               }
 
             // Point locations
@@ -144,6 +189,18 @@ namespace ORB_SLAM2
                 mvLevelSigma2.push_back(keyframe.mvLevelSigma2.at(i));
               }
 
+            vector<float> mvInvLevelSigma2;
+            for(size_t i = 0; i < keyframe.mvInvLevelSigma2.size(); i++){
+                mvInvLevelSigma2.push_back(keyframe.mvInvLevelSigma2.at(i));
+              }
+
+
+            // Write mvScaleFactors
+            vector<float> mvScaleFactors;
+            for(size_t i = 0; i < keyframe.mvScaleFactors.size(); i++){
+                mvScaleFactors.push_back(keyframe.mvScaleFactors.at(i));
+              }
+
             // Write  pose
             cv::Mat pose(3, 4, CV_32F);
             for(size_t row_i = 0; row_i < 3; row_i ++){
@@ -160,23 +217,56 @@ namespace ORB_SLAM2
                   }
               }
 
+            float fx = keyframe.fx;
+            float fy = keyframe.fy;
+            float cx = keyframe.cx;
+            float cy = keyframe.cy;
+            float mfLogScaleFactor = keyframe.mfLogScaleFactor;
+            int mnScaleLevels = keyframe.mnScaleLevels;
+
+            cout << "Extracted information: " << endl;
+
             // Compute similarity transformation [sR|t]
             // In the stereo/RGBD case s=1
-            if(ComputeSim3(worldPoints, keypoints, indices, mvLevelSigma2, pose, K, descriptors, mFeatVec, nrMapPoints))
-              {
-		// Publish it
-	         distributed_mapper_msgs::Measurement measurementMsg; // key frame message
-		 measurementMsg.symbolChr1 = keyframe.symbolChr;
-		 measurementMsg.symbolIndex1 = keyframe.symbolIndex;
-		 measurementMsg.symbolChr2 = matchedSymbol_;
-		 measurementMsg.symbolIndex2 = matchedIndex_;
-		 for(int i =0; i < estimatedR_.rows*estimatedR_.cols; i++)
-		 	measurementMsg.relativeRotation.push_back(estimatedR_.at<float>(i));
-		 for(int i =0; i < estimatedT_.rows*estimatedT_.cols; i++)
-		 	measurementMsg.relativeTranslation.push_back(estimatedT_.at<float>(i));
-		 measurementMsg.relativeScale = estimatedS_;
-              }
 
+            /*
+            bool ComputeSim3(const vector<cv::Mat>& mapPoints,
+                                                      const vector<cv::KeyPoint>& keypoints,
+                                                      vector<int> indices,
+                                                      const vector<float>& mvLevelSigma2,
+                                                      const vector<float>& mvInvLevelSigma2,
+                                                      cv::Mat pose, cv::Mat K,
+                                                      const cv::Mat& descriptors,
+                                                      const DBoW2::FeatureVector& mFeatVec,
+                                                      int nrMapPoints, const vector<float> &maxDistanceInvariance,
+                             const vector<float> &minDistanceInvariance, const vector<float> &mvScaleFactors,
+                             const vector<cv::Mat> &pointDescriptors, float mnMinX, float mnMinY, float mnMaxX,
+                             float mnMaxY, float mfGridElementWidthInv, float mfGridElementHeightInv, float mnGridRows,
+                             float mnGridCols, int mnScaleLevels, float mvLogScaleFactor,
+                             std::vector<std::vector<std::vector<size_t> > > mGrid,
+                             float fx, float fy, float cx, float cy);
+
+                             */
+            if(ComputeSim3(worldPoints, keypoints, indices, mvLevelSigma2, mvInvLevelSigma2,
+                           pose, K, descriptors, mFeatVec, nrMapPoints, maxDistInvariance,
+                           minDistInvariance, mvScaleFactors,
+                           pointDescVec,mnMinX, mnMinY, mnMaxX, mnMaxY, mfGridElementWidthInv, mfGridElementHeightInv,
+                           FRAME_GRID_ROWS, FRAME_GRID_COLS, mnScaleLevels, mfLogScaleFactor, mGridVec,
+                           fx, fy, cx, cy))
+              {
+                // Publish it
+                distributed_mapper_msgs::Measurement measurementMsg; // key frame message
+                measurementMsg.symbolChr1 = keyframe.symbolChr;
+                measurementMsg.symbolIndex1 = keyframe.symbolIndex;
+                measurementMsg.symbolChr2 = matchedSymbol_;
+                measurementMsg.symbolIndex2 = matchedIndex_;
+                for(int i =0; i < estimatedR_.rows*estimatedR_.cols; i++)
+                  measurementMsg.relativeRotation.push_back(estimatedR_.at<float>(i));
+                for(int i =0; i < estimatedT_.rows*estimatedT_.cols; i++)
+                  measurementMsg.relativeTranslation.push_back(estimatedT_.at<float>(i));
+                measurementMsg.relativeScale = estimatedS_;
+                measurement_pub_.publish(measurementMsg);
+              }
           }
       }
   }
@@ -267,6 +357,16 @@ namespace ORB_SLAM2
       }
     keyFrameMsg.minScore=minScore;
 
+    // Misc
+    keyFrameMsg.mfLogScaleFactor= mpCurrentKF->mfLogScaleFactor;
+    keyFrameMsg.mnScaleLevels = mpCurrentKF->mnScaleLevels;
+    keyFrameMsg.mfGridElementWidthInv = mpCurrentKF->mfGridElementWidthInv;
+    keyFrameMsg.mfGridElementHeightInv = mpCurrentKF->mfGridElementHeightInv;
+    keyFrameMsg.mnMinX = mpCurrentKF->mnMinX;
+    keyFrameMsg.mnMinY = mpCurrentKF->mnMinY;
+    keyFrameMsg.mnMaxX = mpCurrentKF->mnMaxX;
+    keyFrameMsg.mnMaxY = mpCurrentKF->mnMaxY;
+
     // Extract bag of words vector
     for(DBoW2::BowVector::const_iterator vit=mpCurrentKF->mBowVec.begin(), vend=mpCurrentKF->mBowVec.end(); vit != vend; vit++)
       {
@@ -318,6 +418,7 @@ namespace ORB_SLAM2
 
     // Write valid map points
     const vector<MapPoint*> vpMapPoints = mpCurrentKF->GetMapPointMatches();
+    cv::Mat pointDescriptors = cv::Mat::zeros(vpMapPoints.size(), 32, CV_8UC1); // map point descriptors
     for(size_t i = 0; i < vpMapPoints.size(); i++){
         MapPoint* mapPoint = vpMapPoints[i];
         if(!mapPoint || mapPoint->isBad()){
@@ -325,6 +426,9 @@ namespace ORB_SLAM2
             for(size_t pos_i = 0; pos_i < 3; pos_i++){
                 keyFrameMsg.worldPoints.push_back(-1);
               }
+            keyFrameMsg.maxDistInvariance.push_back(-1);
+            keyFrameMsg.minDistInvariance.push_back(-1);
+            keyFrameMsg.mfMaxDistance.push_back(-1);
           }
         else{
             int index = mapPoint->GetIndexInKeyFrame(mpCurrentKF);
@@ -334,13 +438,36 @@ namespace ORB_SLAM2
             for(size_t pos_i = 0; pos_i < worldPos.rows*worldPos.cols; pos_i++){
                 keyFrameMsg.worldPoints.push_back(worldPos.at<float>(pos_i));
               }
+
+            float maxDistInvariance = mapPoint->GetMaxDistanceInvariance();
+            float minDistInvariance = mapPoint->GetMinDistanceInvariance();
+            keyFrameMsg.mfMaxDistance.push_back(mapPoint->mfMaxDistance);
+            keyFrameMsg.maxDistInvariance.push_back(maxDistInvariance);
+            keyFrameMsg.minDistInvariance.push_back(minDistInvariance);
+            const cv::Mat dMP = mapPoint->GetDescriptor();
+            dMP.copyTo(pointDescriptors.row(i));
           }
       }
     keyFrameMsg.nrMapPoints = vpMapPoints.size();
 
+    cv_bridge::CvImage pointDesc;
+    pointDesc.encoding = sensor_msgs::image_encodings::TYPE_8UC1;
+    pointDesc.image = pointDescriptors;
+    keyFrameMsg.pointDesc = *(pointDesc.toImageMsg());
+
     // Write mvLevelSigma2
     for(size_t i = 0; i < mpCurrentKF->mvLevelSigma2.size(); i++){
         keyFrameMsg.mvLevelSigma2.push_back(mpCurrentKF->mvLevelSigma2.at(i));
+      }
+
+    // Write mvLevelSigma2
+    for(size_t i = 0; i < mpCurrentKF->mvInvLevelSigma2.size(); i++){
+        keyFrameMsg.mvInvLevelSigma2.push_back(mpCurrentKF->mvInvLevelSigma2.at(i));
+      }
+
+    // Write mvScaleFactors
+    for(size_t i = 0; i < mpCurrentKF->mvScaleFactors.size(); i++){
+        keyFrameMsg.mvScaleFactors.push_back(mpCurrentKF->mvScaleFactors.at(i));
       }
 
     // Write  pose
@@ -354,6 +481,10 @@ namespace ORB_SLAM2
     for(size_t i = 0; i < K.rows*K.cols; i++){
         keyFrameMsg.K.push_back(K.at<float>(i));
       }
+    keyFrameMsg.fx = mpCurrentKF->fx;
+    keyFrameMsg.fy = mpCurrentKF->fy;
+    keyFrameMsg.cx = mpCurrentKF->cx;
+    keyFrameMsg.cy = mpCurrentKF->cy;
 
     // Publish it
     keyframe_pub_.publish(keyFrameMsg);
@@ -363,14 +494,14 @@ namespace ORB_SLAM2
   {
     // Query the database imposing the minimum score
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidatesInterRobot(keyFrameBoWVec, mnId, minScore);
-
+    cout << "[LoopClosingInterRobot] Found " << vpCandidateKFs.size() << " candidate Keyframes: " << endl;
     // If there are no loop candidates, just add new keyframe and return false
     if(vpCandidateKFs.empty())
       {
         return false;
       }
 
-    cout << "[LoopClosingInterRobot] Found " << vpCandidateKFs.size() << " candidate Keyframes: " << endl;
+
     mvpEnoughConsistentCandidates = vpCandidateKFs;
     return true;
 #if 0
@@ -459,13 +590,18 @@ namespace ORB_SLAM2
                                           const vector<cv::KeyPoint>& keypoints,
                                           vector<int> indices,
                                           const vector<float>& mvLevelSigma2,
-                                          cv::Mat pose, cv::Mat K,
+                                          const vector<float>& mvInvLevelSigma2,
+                                          const cv::Mat& pose, const cv::Mat& K,
                                           const cv::Mat& descriptors,
                                           const DBoW2::FeatureVector& mFeatVec,
-                                          int nrMapPoints)
-  {
+                                          int nrMapPoints, const vector<float>& maxDistanceInvariance, const vector<float> &minDistanceInvariance,
+                                          const vector<float> &mvScaleFactors, const vector<cv::Mat>& pointDescriptors,
+                                          float mnMinX, float mnMinY, float mnMaxX, float mnMaxY, float mfGridElementWidthInv, float mfGridElementHeightInv,
+                                          float mnGridRows, float mnGridCols, int mnScaleLevels, float mfLogScaleFactor,
+                                          const std::vector< std::vector <std::vector<size_t> > >& mGrid,
+                                          float fx, float fy, float cx, float cy){
+    cout << "Computing Sim3" << endl; fflush(stdout);
     // For each consistent loop candidate we try to compute a Sim3
-
     const int nInitialCandidates = mvpEnoughConsistentCandidates.size();
 
     // We compute first ORB matches for each candidate
@@ -498,7 +634,11 @@ namespace ORB_SLAM2
             continue;
           }
 
+        cout << "[LoopClosingInterRobot::searchByBow] " << endl;
+
         int nmatches = matcher.SearchByBoWInterRobot(keypoints, mFeatVec, nrMapPoints, indices, descriptors, pKF,vvpMapPointMatches[i]);
+        cout << "[LoopClosingInterRobot::computeSim3] #Matches by BoW: " << nmatches << " to candidate: " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
+
         sortedMatches.insert(pair<int, int>(nmatches, i));
 
         if(nmatches<20)
@@ -515,7 +655,6 @@ namespace ORB_SLAM2
         nCandidates++;
       }
 
-#if 1
 
     bool bMatch = false;
 
@@ -532,7 +671,6 @@ namespace ORB_SLAM2
               continue;
 
             KeyFrame* pKF = mvpEnoughConsistentCandidates[i];
-            //cout << "[LoopClosingInterRobot::computeSim3] #Matches by BoW: " << it->first << " to candidate: " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
 
             // Perform 5 Ransac Iterations
             vector<bool> vbInliers;
@@ -552,12 +690,10 @@ namespace ORB_SLAM2
             // If RANSAC returns a Sim3, perform a guided matching and optimize with all correspondences
             if(!Scm.empty())
               {
-                int nrInliers = 0;
                 vector<MapPoint*> vpMapPointMatches(vvpMapPointMatches[i].size(), static_cast<MapPoint*>(NULL));
                 for(size_t j=0, jend=vbInliers.size(); j<jend; j++)
                   {
                     if(vbInliers[j]){
-                        nrInliers++;
                         vpMapPointMatches[j]=vvpMapPointMatches[i][j];
                       }
                   }
@@ -565,22 +701,26 @@ namespace ORB_SLAM2
                 cv::Mat R = pSolver->GetEstimatedRotation();
                 cv::Mat t = pSolver->GetEstimatedTranslation();
                 const float s = pSolver->GetEstimatedScale();
-                cout << "[LoopClosingInterRobot] Found #Inliers: " << nrInliers  << " with " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
-		estimatedR_ = R;
-		estimatedT_ = t;
-		estimatedS_ = s;
-	        matchedSymbol_ = gtsam::symbolChr(pKF->key_);
-		matchedIndex_ = gtsam::symbolIndex(pKF->key_);
-                bMatch = true;
-		break;
+                cout << "[LoopClosingInterRobot] Found #Inliers: " << nInliers  << " with " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
 
 
-#if 0
-                matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,7.5);
+
+                matcher.SearchBySim3InterRobot(nrMapPoints, mapPoints, keypoints, indices, maxDistanceInvariance, minDistanceInvariance, mvScaleFactors,
+                                               pointDescriptors,  mnMinX,  mnMinY,  mnMaxX,  mnMaxY,  mfGridElementWidthInv,  mfGridElementHeightInv,
+                                               mnGridRows,  mnGridCols,  mnScaleLevels,  mfLogScaleFactor,  mGrid,
+                                               descriptors,   pose,  K, fx,  fy,  cx,  cy,  pKF,vpMapPointMatches,s,R,t,7.5);
+
+
+                // matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,7.5);
+
 
 
                 g2o::Sim3 gScm(Converter::toMatrix3d(R),Converter::toVector3d(t),s);
-                const int nInliers = Optimizer::OptimizeSim3(mpCurrentKF, pKF, vpMapPointMatches, gScm, 10, mbFixScale);
+                const int nInliers = Optimizer::OptimizeSim3InterRobot(mapPoints, keypoints, indices, mvInvLevelSigma2,
+                                                                       pose, K, pKF, vpMapPointMatches, gScm, 10, mbFixScale);
+
+                //const int nInliers = Optimizer::OptimizeSim3(mpCurrentKF, pKF, vpMapPointMatches, gScm, 10, mbFixScale);
+
 
                 // If optimization is succesful stop ransacs and continue
                 if(nInliers>=20)
@@ -592,25 +732,25 @@ namespace ORB_SLAM2
                     mScw = Converter::toCvMat(mg2oScw);
                     mScm = Converter::toCvMat(gScm);
 
+                    estimatedR_ = mScm.rowRange(0,3).colRange(0,3).clone();;
+                    estimatedT_ = mScm.rowRange(0,3).col(3).clone();
+                    estimatedS_ = 1.0f;
+                    matchedSymbol_ = gtsam::symbolChr(pKF->key_);
+                    matchedIndex_ = gtsam::symbolIndex(pKF->key_);
                     mvpCurrentMatchedPoints = vpMapPointMatches;
                     break;
                   }
-#endif
               }
 
           }
       }
 
-#endif
-
-#if 0
-
 
     if(!bMatch)
       {
-        for(int i=0; i<nInitialCandidates; i++)
-          mvpEnoughConsistentCandidates[i]->SetErase();
-        mpCurrentKF->SetErase();
+        //        for(int i=0; i<nInitialCandidates; i++)
+        //          mvpEnoughConsistentCandidates[i]->SetErase();
+        //        mpCurrentKF->SetErase();
         return false;
       }
 
@@ -627,17 +767,22 @@ namespace ORB_SLAM2
             MapPoint* pMP = vpMapPoints[i];
             if(pMP)
               {
-                if(!pMP->isBad() && pMP->mnLoopPointForKF!=mpCurrentKF->mnId)
+                if(!pMP->isBad() && pMP->mnLoopPointForKFInterRobot!=mpCurrentKF->mnId)
                   {
                     mvpLoopMapPoints.push_back(pMP);
-                    pMP->mnLoopPointForKF=mpCurrentKF->mnId;
+                    pMP->mnLoopPointForKFInterRobot=mpCurrentKF->mnId;
                   }
               }
           }
       }
 
+
     // Find more matches projecting with the computed Sim3
-    matcher.SearchByProjection(mpCurrentKF, mScw, mvpLoopMapPoints, mvpCurrentMatchedPoints,10);
+    matcher.SearchByProjectionInterRobot(keypoints, mvScaleFactors,
+                                         mnMinX,  mnMinY,  mnMaxX,  mnMaxY,  mfGridElementWidthInv,  mfGridElementHeightInv,
+                                         mnGridRows,  mnGridCols,  mnScaleLevels, mfLogScaleFactor, mGrid,
+                                         descriptors,  fx,  fy,  cx,  cy, mScw, mvpLoopMapPoints, mvpCurrentMatchedPoints,10);
+
 
     // If enough matches accept Loop
     int nTotalMatches = 0;
@@ -649,24 +794,19 @@ namespace ORB_SLAM2
 
     if(nTotalMatches>=40)
       {
-        for(int i=0; i<nInitialCandidates; i++)
-          if(mvpEnoughConsistentCandidates[i]!=mpMatchedKF)
-            mvpEnoughConsistentCandidates[i]->SetErase();
+//        for(int i=0; i<nInitialCandidates; i++)
+//          if(mvpEnoughConsistentCandidates[i]!=mpMatchedKF)
+//            mvpEnoughConsistentCandidates[i]->SetErase();
         return true;
       }
     else
       {
-        for(int i=0; i<nInitialCandidates; i++)
-          mvpEnoughConsistentCandidates[i]->SetErase();
-        mpCurrentKF->SetErase();
+//        for(int i=0; i<nInitialCandidates; i++)
+//          mvpEnoughConsistentCandidates[i]->SetErase();
+//        mpCurrentKF->SetErase();
         return false;
       }
-
-#endif
-if(bMatch)
     return true;
-else
-return false;
 
   }
 

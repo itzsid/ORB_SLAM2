@@ -41,7 +41,7 @@ class Map;
 class LocalMapping
 {
 public:
-    LocalMapping(Map* pMap, const float bMonocular);
+    LocalMapping(Map* pMap, KeyFrameDatabase *pDB, const float bMonocular);
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
     void SetLoopCloserInterRobot(LoopClosingInterRobot* pLoopCloserInterRobot);
@@ -132,6 +132,8 @@ protected:
 
     bool mbLoopClose; // Added by @itzsid
     bool mbLoopCloseInterRobot; // Added by @itzsid
+    KeyFrameDatabase* mpKeyFrameDB;
+
 };
 
 } //namespace ORB_SLAM

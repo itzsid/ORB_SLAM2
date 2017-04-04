@@ -104,6 +104,7 @@ public:
 
     // Variables used by loop closing
     long unsigned int mnLoopPointForKF;
+    long unsigned int mnLoopPointForKFInterRobot;
     long unsigned int mnCorrectedByKF;
     long unsigned int mnCorrectedReference;    
     cv::Mat mPosGBA;
@@ -112,6 +113,10 @@ public:
 
     static std::mutex mGlobalMutex;
 
+
+    // Scale invariance distances
+    float mfMinDistance;
+    float mfMaxDistance;
 protected:    
 
      // Position in absolute coordinates
@@ -137,9 +142,6 @@ protected:
      bool mbBad;
      MapPoint* mpReplaced;
 
-     // Scale invariance distances
-     float mfMinDistance;
-     float mfMaxDistance;
 
      Map* mpMap;
 

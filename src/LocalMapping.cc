@@ -28,10 +28,10 @@
 namespace ORB_SLAM2
 {
 
-LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
+LocalMapping::LocalMapping(Map *pMap, KeyFrameDatabase* pDB, const float bMonocular):
     mbMonocular(bMonocular), mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true),
-    mbLoopClose(true) // mbLoopClose() added by @itzsid
+    mbLoopClose(true), mpKeyFrameDB(pDB) // mbLoopClose() added by @itzsid
 {
 }
 
@@ -101,8 +101,13 @@ void LocalMapping::Run()
                 KeyFrameCulling();
             }
 
-            if(mbLoopClose)
+            if(mbLoopClose){
               mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+              }
+            else{
+                mpKeyFrameDB->add(mpCurrentKeyFrame);
+                mpCurrentKeyFrame->SetNotErase(); // do not erase the keyframe
+              }
 
             if(mbLoopCloseInterRobot)
               mpLoopCloserInterRobot->InsertKeyFrame(mpCurrentKeyFrame);

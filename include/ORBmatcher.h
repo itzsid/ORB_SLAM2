@@ -34,9 +34,9 @@
 namespace ORB_SLAM2
 {
 
-class ORBmatcher
-{    
-public:
+  class ORBmatcher
+  {
+  public:
 
     ORBmatcher(float nnratio=0.6, bool checkOri=true);
 
@@ -57,7 +57,14 @@ public:
 
     // Project MapPoints using a Similarity Transformation and search matches.
     // Used in loop detection (Loop Closing)
-     int SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th);
+    int SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th);
+
+    int SearchByProjectionInterRobot( const vector<cv::KeyPoint>& keypoints,                                            const vector<float>& mvScaleFactors,
+                                      float mnMinX, float mnMinY, float mnMaxX, float mnMaxY, float mfGridElementWidthInv, float mfGridElementHeightInv,
+                                      float mnGridRows, float mnGridCols, int mnScaleLevels,  float mfLogScaleFactor, std::vector< std::vector <std::vector<size_t> > > mGrid,
+                                      const cv::Mat &Descriptors1,
+                                      float fx, float fy, float cx, float cy,
+                                      cv::Mat Scw, const vector<MapPoint*> &vpPoints, vector<MapPoint*> &vpMatched, int th);
 
     // Search matches between MapPoints in a KeyFrame and ORB in a Frame.
     // Brute force constrained to ORB that belong to the same vocabulary node (at a certain level)
@@ -65,12 +72,35 @@ public:
     int SearchByBoW(KeyFrame *pKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches);
     int SearchByBoW(KeyFrame *pKF1, KeyFrame* pKF2, std::vector<MapPoint*> &vpMatches12);
 
+
+    vector<size_t> GetFeaturesInArea(float mnMinX, float mnMinY, float mfGridElementWidthInv, float mfGridElementHeightInv, float mnGridRows, float mnGridCols,
+                                     const vector<cv::KeyPoint>& keypoints,     std::vector< std::vector <std::vector<size_t> > > mGrid,
+                                     const float &x, const float &y, const float &r);
+
+    int PredictScale(const float &currentDist, float mfMaxDistance, int mnScaleLevels, float mfLogScaleFactor);
+
+    int SearchBySim3InterRobot(int nrMapPoints,
+                               const vector<cv::Mat>& mapPoints,
+                               const vector<cv::KeyPoint>& keypoints,
+                               vector<int> indices,
+                               const vector<float>& maxDistanceInvariance,
+                               const vector<float>& minDistanceInvariance,
+                               const vector<float>& mvScaleFactors,
+                               const vector<cv::Mat>& pointDescriptors,
+                               float mnMinX, float mnMinY, float mnMaxX, float mnMaxY, float mfGridElementWidthInv, float mfGridElementHeightInv,
+                               float mnGridRows, float mnGridCols, int mnScaleLevels, float mvLogScaleFactor, std::vector< std::vector <std::vector<size_t> > > mGrid,
+                               const cv::Mat &Descriptors1,
+                               cv::Mat pose, cv::Mat K,
+                               float fx, float fy, float cx, float cy,
+                               KeyFrame *pKF2, vector<MapPoint*> &vpMatches12,
+                               const float &s12, const cv::Mat &R12, const cv::Mat &t12, const float th);
+
     int SearchByBoWInterRobot(const vector<cv::KeyPoint> &vKeysUn1,
-                                          const DBoW2::FeatureVector &vFeatVec1,
-                                          int nrMapPoints,
-                                          vector<int> indices,
-                                          const cv::Mat &Descriptors1,
-                                          KeyFrame *pKF2, vector<MapPoint *> &vpMatches12);
+                              const DBoW2::FeatureVector &vFeatVec1,
+                              int nrMapPoints,
+                              vector<int> indices,
+                              const cv::Mat &Descriptors1,
+                              KeyFrame *pKF2, vector<MapPoint *> &vpMatches12);
 
 
     // Matching for the Map Initialization (only used in the monocular case)
@@ -91,14 +121,14 @@ public:
     // Project MapPoints into KeyFrame using a given Sim3 and search for duplicated MapPoints.
     int Fuse(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint);
 
-public:
+  public:
 
     static const int TH_LOW;
     static const int TH_HIGH;
     static const int HISTO_LENGTH;
 
 
-protected:
+  protected:
 
     bool CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame *pKF);
 
@@ -108,7 +138,7 @@ protected:
 
     float mfNNratio;
     bool mbCheckOrientation;
-};
+  };
 
 }// namespace ORB_SLAM
 

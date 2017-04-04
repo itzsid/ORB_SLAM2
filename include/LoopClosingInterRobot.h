@@ -132,10 +132,17 @@ protected:
                                               const vector<cv::KeyPoint>& keypoints,
                                               vector<int> indices,
                                               const vector<float>& mvLevelSigma2,
-                                              cv::Mat pose, cv::Mat K,
+                                              const vector<float>& mvInvLevelSigma2,
+                                            const cv::Mat& pose, const cv::Mat& K,
                                               const cv::Mat& descriptors,
                                               const DBoW2::FeatureVector& mFeatVec,
-                                              int nrMapPoints);
+                                              int nrMapPoints, const vector<float> &maxDistanceInvariance,
+                     const vector<float> &minDistanceInvariance, const vector<float> &mvScaleFactors,
+                     const vector<cv::Mat> &pointDescriptors, float mnMinX, float mnMinY, float mnMaxX,
+                     float mnMaxY, float mfGridElementWidthInv, float mfGridElementHeightInv, float mnGridRows,
+                     float mnGridCols, int mnScaleLevels, float mvLogScaleFactor,
+                     const std::vector<std::vector<std::vector<size_t> > >& mGrid,
+                     float fx, float fy, float cx, float cy);
 
     void SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap);
 
