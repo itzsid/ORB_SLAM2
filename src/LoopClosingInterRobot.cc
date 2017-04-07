@@ -72,7 +72,7 @@ namespace ORB_SLAM2
     // Only receive keyframe message from higher robotID
     if(keyframe.robotID > robotID_){
         // Received message
-        cout << endl << "[LoopClosingInterRobot] Received message from: " << keyframe.robotID << " id: " << keyframe.symbolIndex << endl;
+        //cout << endl << "[LoopClosingInterRobot] Received message from: " << keyframe.robotID << " id: " << keyframe.symbolIndex << endl;
         // Convert wordIds and weights to BoW vector
         DBoW2::BowVector mBowVec;
         for(int wordId_i = 0; wordId_i < keyframe.wordIds.size(); wordId_i++){
@@ -224,7 +224,7 @@ namespace ORB_SLAM2
             float mfLogScaleFactor = keyframe.mfLogScaleFactor;
             int mnScaleLevels = keyframe.mnScaleLevels;
 
-            cout << "Extracted information: " << endl;
+            //cout << "Extracted information: " << endl;
 
             // Compute similarity transformation [sR|t]
             // In the stereo/RGBD case s=1
@@ -494,7 +494,7 @@ namespace ORB_SLAM2
   {
     // Query the database imposing the minimum score
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidatesInterRobot(keyFrameBoWVec, mnId, minScore);
-    cout << "[LoopClosingInterRobot] Found " << vpCandidateKFs.size() << " candidate Keyframes: " << endl;
+    //cout << "[LoopClosingInterRobot] Found " << vpCandidateKFs.size() << " candidate Keyframes: " << endl;
     // If there are no loop candidates, just add new keyframe and return false
     if(vpCandidateKFs.empty())
       {
@@ -627,7 +627,7 @@ namespace ORB_SLAM2
           }
 
         int nmatches = matcher.SearchByBoWInterRobot(keypoints, mFeatVec, nrMapPoints, indices, descriptors, pKF,vvpMapPointMatches[i]);
-        cout << "[LoopClosingInterRobot::computeSim3] #Matches by BoW: " << nmatches << " to candidate: " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
+        //cout << "[LoopClosingInterRobot::computeSim3] #Matches by BoW: " << nmatches << " to candidate: " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
 
         sortedMatches.insert(pair<int, int>(nmatches, i));
 
@@ -691,7 +691,7 @@ namespace ORB_SLAM2
                 cv::Mat R = pSolver->GetEstimatedRotation();
                 cv::Mat t = pSolver->GetEstimatedTranslation();
                 const float s = pSolver->GetEstimatedScale();
-                cout << "[LoopClosingInterRobot] Found #Inliers: " << nInliers  << " with " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
+                //cout << "[LoopClosingInterRobot] Found #Inliers: " << nInliers  << " with " << gtsam::symbolChr(pKF->key_) << gtsam::symbolIndex(pKF->key_) << endl;
 
 
 
@@ -701,6 +701,13 @@ namespace ORB_SLAM2
                                                descriptors,   pose,  K, fx,  fy,  cx,  cy,  pKF,vpMapPointMatches,s,R,t,7.5);
                 // matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,7.5);
 
+                int goodPoints = 0;
+                for(size_t indices_i = 0; indices_i < indices.size(); indices_i++){
+                    if(indices[indices_i]){
+                        goodPoints++;
+                      }
+                  }
+                //cout << "#Good Points: " << goodPoints << endl;
 
 
                 g2o::Sim3 gScm(Converter::toMatrix3d(R),Converter::toVector3d(t),s);
@@ -977,7 +984,7 @@ namespace ORB_SLAM2
     // Loop closed. Release Local Mapping.
     mpLocalMapper->Release();
 
-    cout << "Loop Closed!" << endl;
+    //cout << "Loop Closed!" << endl;
 
     mLastLoopKFid = mpCurrentKF->mnId;
   }

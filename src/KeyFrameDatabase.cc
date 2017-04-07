@@ -39,7 +39,7 @@ namespace ORB_SLAM2
 
   void KeyFrameDatabase::add(KeyFrame *pKF)
   {
-    cout << "Adding keyframe: " << endl;
+    //cout << "Adding keyframe: " << endl;
     unique_lock<mutex> lock(mMutex);
 
     for(DBoW2::BowVector::const_iterator vit= pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
