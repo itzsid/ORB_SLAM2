@@ -74,7 +74,7 @@ namespace ORB_SLAM2
                     if(ComputeSim3())
                       {
                         // Perform loop fusion and pose graph optimization
-                        CorrectLoop();
+                        //CorrectLoop(); -- do not correct loop in this case -- backend pose graph optimization will do it
 
                         // Create loop closure structure
                         currentKey = mpCurrentKF->key_;
@@ -147,7 +147,7 @@ namespace ORB_SLAM2
     if(mpCurrentKF->mnId<mLastLoopKFid+10)
       {
         mpKeyFrameDB->add(mpCurrentKF);
-        mpCurrentKF->SetErase();
+        //mpCurrentKF->SetErase();
         return false;
       }
 
@@ -178,7 +178,7 @@ namespace ORB_SLAM2
       {
         mpKeyFrameDB->add(mpCurrentKF);
         mvConsistentGroups.clear();
-        mpCurrentKF->SetErase();
+      //  mpCurrentKF->SetErase();
         return false;
       }
 
@@ -249,7 +249,7 @@ namespace ORB_SLAM2
 
     if(mvpEnoughConsistentCandidates.empty())
       {
-        mpCurrentKF->SetErase();
+       // mpCurrentKF->SetErase();
         return false;
       }
     else
@@ -257,7 +257,7 @@ namespace ORB_SLAM2
         return true;
       }
 
-    mpCurrentKF->SetErase();
+   // mpCurrentKF->SetErase();
     return false;
   }
 
@@ -377,9 +377,9 @@ namespace ORB_SLAM2
 
     if(!bMatch)
       {
-        for(int i=0; i<nInitialCandidates; i++)
-          mvpEnoughConsistentCandidates[i]->SetErase();
-        mpCurrentKF->SetErase();
+       // for(int i=0; i<nInitialCandidates; i++)
+         // mvpEnoughConsistentCandidates[i]->SetErase();
+       // mpCurrentKF->SetErase();
         return false;
       }
 
@@ -418,16 +418,16 @@ namespace ORB_SLAM2
 
     if(nTotalMatches>=40)
       {
-        for(int i=0; i<nInitialCandidates; i++)
-          if(mvpEnoughConsistentCandidates[i]!=mpMatchedKF)
-            mvpEnoughConsistentCandidates[i]->SetErase();
+//        for(int i=0; i<nInitialCandidates; i++)
+//          if(mvpEnoughConsistentCandidates[i]!=mpMatchedKF)
+//            mvpEnoughConsistentCandidates[i]->SetErase();
         return true;
       }
     else
       {
-        for(int i=0; i<nInitialCandidates; i++)
-          mvpEnoughConsistentCandidates[i]->SetErase();
-        mpCurrentKF->SetErase();
+//        for(int i=0; i<nInitialCandidates; i++)
+//          mvpEnoughConsistentCandidates[i]->SetErase();
+//        mpCurrentKF->SetErase();
         return false;
       }
 
