@@ -60,7 +60,7 @@ public:
 
 public:
 
-    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
+    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale, const bool correctLoop = false);
 
     void SetTracker(Tracking* pTracker);
 
@@ -161,6 +161,8 @@ protected:
 
 
     bool mnFullBAIdx;
+
+    bool correctLoop_;
 };
 
 } //namespace ORB_SLAM

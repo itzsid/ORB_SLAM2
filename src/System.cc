@@ -30,7 +30,7 @@ namespace ORB_SLAM2
 {
 
   System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-                 const bool bUseViewer, const bool bUseLoopClosure, const bool bUseInterRobotLoopCloser, int robotID, char robotName):mSensor(sensor),mbReset(false),mbActivateLocalizationMode(false),
+                 const bool bUseViewer, const bool bUseLoopClosure, const bool bUseInterRobotLoopCloser, int robotID, char robotName, bool correctLoop):mSensor(sensor),mbReset(false),mbActivateLocalizationMode(false),
     mbDeactivateLocalizationMode(false), bUseLoopClosure_(bUseLoopClosure), bUseInterRobotLoopCloser_(bUseInterRobotLoopCloser), robotID_(robotID), robotName_(robotName)
   {
     // Output welcome message
@@ -93,7 +93,7 @@ namespace ORB_SLAM2
 
     //Initialize the Loop Closing thread and launch
     if(bUseLoopClosure){
-        mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
+        mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR, correctLoop);
         mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
       }
 

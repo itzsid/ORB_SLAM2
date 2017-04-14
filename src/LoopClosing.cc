@@ -35,10 +35,10 @@
 namespace ORB_SLAM2
 {
 
-  LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale):
+  LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale, const bool correctLoop):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
-    mbStopGBA(false), mpThreadGBA(NULL), mbFixScale(bFixScale), mnFullBAIdx(0), loopClosureRetreived_(true), loopClosure_()
+    mbStopGBA(false), mpThreadGBA(NULL), mbFixScale(bFixScale), mnFullBAIdx(0), loopClosureRetreived_(true), loopClosure_(), correctLoop_(correctLoop)
   {
     mnCovisibilityConsistencyTh = 3;
   }
@@ -74,7 +74,8 @@ namespace ORB_SLAM2
                     if(ComputeSim3())
                       {
                         // Perform loop fusion and pose graph optimization
-                        //CorrectLoop(); -- do not correct loop in this case -- backend pose graph optimization will do it
+                        if(correctLoop_)
+                         CorrectLoop();  //-- do not correct loop in this case -- backend pose graph optimization will do it
 
                         // Create loop closure structure
                         currentKey = mpCurrentKF->key_;
