@@ -508,6 +508,15 @@ void Tracking::Track()
         cv::Mat Tcr = mCurrentFrame.mTcw*mCurrentFrame.mpReferenceKF->GetPoseInverse();
         mlRelativeFramePoses.push_back(Tcr);
         mlpReferences.push_back(mpReferenceKF);
+        if(!mlpKeyFrameToFrame.count(mpReferenceKF)){
+            vector<gtsam::Key> keys;
+            keys.push_back(mCurrentFrame.key_);
+            mlpKeyFrameToFrame[mpReferenceKF] = keys;
+          }
+        else{
+            mlpKeyFrameToFrame[mpReferenceKF].push_back(mCurrentFrame.key_);
+          }
+
         mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
         mlbLost.push_back(mState==LOST);
     }
@@ -521,6 +530,47 @@ void Tracking::Track()
     }
 
 }
+
+  set<gtsam::Key> Tracking::getCoVisibleKeys(gtsam::Key key){
+    //cout << "Finding covisible keys for: "  << gtsam::symbolChr(key) <<  gtsam::symbolIndex(key) << endl;
+    set<gtsam::Key> keys;
+    int index = gtsam::symbolIndex(key);
+
+    // index
+    std::list<KeyFrame* >::iterator it = mlpReferences.begin();
+    std::advance(it, index-1);
+    KeyFrame* kF = *it;
+
+    // Check if connections are found yet or not
+    while(kF->mnId!=0 && kF->mbFirstConnection){
+        usleep(1000);
+      }
+
+    vector<KeyFrame* > covisibleKFs = kF->GetVectorCovisibleKeyFrames();
+    covisibleKFs.push_back(kF); // push this keyframe too
+    //cout << "covisibleKFs.size(): " << covisibleKFs.size() << endl;
+
+    if(covisibleKFs.empty()){
+        return keys;
+      }
+    else{
+        for(size_t i = 0; i < covisibleKFs.size(); i++){
+            KeyFrame* covisibleKF = covisibleKFs[i];
+
+            // find set of frames who have referenced that key frame
+           vector<gtsam::Key> covisibleKeys = mlpKeyFrameToFrame[covisibleKF];
+           for(size_t key_i = 0; key_i < covisibleKeys.size(); key_i++){
+                gtsam::Key covisibleKey = covisibleKeys[key_i];
+                if(key == covisibleKey)continue;
+                if(keys.find(covisibleKey) == keys.end()){
+                    keys.insert(covisibleKey);
+                  }
+             }
+          }
+      }
+    //cout << "Size of covisible keys: " << keys.size() << endl;
+    return keys;
+  }
 
 
 void Tracking::StereoInitialization()

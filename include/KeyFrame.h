@@ -192,6 +192,10 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
     gtsam::Key key_;
+
+    // Spanning Tree and Loop Edges
+    bool mbFirstConnection;
+
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:
 
@@ -216,8 +220,6 @@ protected:
     std::vector<KeyFrame*> mvpOrderedConnectedKeyFrames;
     std::vector<int> mvOrderedWeights;
 
-    // Spanning Tree and Loop Edges
-    bool mbFirstConnection;
     KeyFrame* mpParent;
     std::set<KeyFrame*> mspChildrens;
     std::set<KeyFrame*> mspLoopEdges;

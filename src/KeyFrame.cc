@@ -288,6 +288,8 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 
 void KeyFrame::UpdateConnections()
 {
+  //cout << "Updating connection for: "  << gtsam::symbolChr(key_) <<  gtsam::symbolIndex(key_) << endl;
+
     map<KeyFrame*,int> KFcounter;
 
     vector<MapPoint*> vpMP;
@@ -320,8 +322,10 @@ void KeyFrame::UpdateConnections()
     }
 
     // This should not happen
-    if(KFcounter.empty())
+    if(KFcounter.empty()){
+      //  cout << "KFcounter is empty" << endl;
         return;
+      }
 
     //If the counter is greater than threshold add connection
     //In case no keyframe counter is over threshold add the one with maximum counter
@@ -376,6 +380,9 @@ void KeyFrame::UpdateConnections()
         }
 
     }
+
+    //cout << "Updated connection for: "  << gtsam::symbolChr(key_) <<  gtsam::symbolIndex(key_) << endl;
+
 }
 
 void KeyFrame::AddChild(KeyFrame *pKF)

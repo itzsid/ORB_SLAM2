@@ -110,6 +110,7 @@ public:
     // Basically we store the reference keyframe for each frame and its relative transformation
     list<cv::Mat> mlRelativeFramePoses;
     list<KeyFrame*> mlpReferences;
+    map<KeyFrame*, vector<gtsam::Key> > mlpKeyFrameToFrame;
     list<double> mlFrameTimes;
     list<bool> mlbLost;
 
@@ -127,6 +128,8 @@ public:
     void StereoInitialization(cv::Mat startingPose);
 
     void ResetAndInitialize(cv::Mat startingPose);
+
+    set<gtsam::Key> getCoVisibleKeys(gtsam::Key key);
 
 protected:
 

@@ -121,6 +121,8 @@ public:
 
     void ResetAndInitialize(cv::Mat startingPose);
 
+    set<gtsam::Key> getCoVisibleKeys(gtsam::Key key);
+
     bool bUseLoopClosure_;
     bool bUseInterRobotLoopCloser_;
 
