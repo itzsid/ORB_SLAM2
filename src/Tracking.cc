@@ -531,6 +531,24 @@ void Tracking::Track()
 
 }
 
+  set<KeyFrame*> Tracking::getKeyframes(std::vector<gtsam::Key> keys){
+    set<KeyFrame*> kFs;
+    for(size_t key_i =0; key_i <  keys.size(); key_i++){
+        int index = gtsam::symbolIndex(keys.at(key_i));
+
+        // index
+        std::list<KeyFrame* >::iterator it = mlpReferences.begin();
+        std::advance(it, index-1);
+        KeyFrame* kF = *it;
+
+        // insert keyframe
+        if(kFs.find(kF) == kFs.end()){
+            kFs.insert(kF);
+          }
+      }
+    return kFs;
+  }
+
   set<gtsam::Key> Tracking::getCoVisibleKeys(gtsam::Key key){
     //cout << "Finding covisible keys for: "  << gtsam::symbolChr(key) <<  gtsam::symbolIndex(key) << endl;
     set<gtsam::Key> keys;

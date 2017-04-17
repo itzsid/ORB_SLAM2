@@ -240,6 +240,8 @@ namespace ORB_SLAM2
     return make_pair(trackedPose, hasNewLoopClosure);
   }
 
+
+
   /**********************************************************************************/
   tuple<gtsam::Key, gtsam::Key, cv::Mat> System::GetLoopClosure(){
     LoopClosure loopClosure;
@@ -255,6 +257,12 @@ namespace ORB_SLAM2
   set<gtsam::Key> System::getCoVisibleKeys(gtsam::Key key){
     return mpTracker->getCoVisibleKeys(key);
   }
+
+  /**********************************************************************************/
+  set<KeyFrame*> System::getKeyframes(std::vector<gtsam::Key> keys){
+    return mpTracker->getKeyframes(keys);
+  }
+
 
   /**********************************************************************************/
   cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)

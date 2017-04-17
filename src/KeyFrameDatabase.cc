@@ -74,6 +74,95 @@ namespace ORB_SLAM2
   }
 
 
+  set<KeyFrame*> KeyFrameDatabase::DetectLoopCandidatesAmongTwoSets(std::set<ORB_SLAM2::KeyFrame*> kFs1, std::set<ORB_SLAM2::KeyFrame*> kFs2, float minScore)
+  {
+
+    set<KeyFrame*>::iterator it1, it2;
+    set<KeyFrame*> lKFsSharingWords;
+
+    cout << "kFs1.size(): " << kFs1.size() << " kFs2.size(): " << kFs2.size() << endl;
+
+    {
+      unique_lock<mutex> lock(mMutex);
+
+      for(it1 = kFs1.begin(); it1!=kFs1.end(); it1++){
+          KeyFrame* kF1 = *it1;
+
+      // Search all keyframes that share a word with current keyframes
+      // Discard keyframes connected to the query keyframe
+      for(DBoW2::BowVector::const_iterator vit=kF1->mBowVec.begin(), vend=kF1->mBowVec.end(); vit != vend; vit++)
+        {
+          list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
+
+          for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
+            {
+              KeyFrame* pKFi=*lit;
+              if(kFs2.count(pKFi)){ // present in kFs2
+
+                  if(pKFi->mnLoopQuery!=kF1->mnId)
+                    {
+                     if(!lKFsSharingWords.count(pKFi))
+                        pKFi->mnLoopWords=0;
+
+                      if(!kFs1.count(pKFi))
+                        {
+                          pKFi->mnLoopQuery=kF1->mnId;
+                          if(!lKFsSharingWords.count(pKFi))
+                            lKFsSharingWords.insert(pKFi);
+                        }
+                    }
+                  pKFi->mnLoopWords++;
+                }
+            }
+          }
+        }
+    }
+
+    cout << "lKFsSharingWords.size(): " << lKFsSharingWords.size() << endl;
+    int maxCommonWords=0;
+
+    for(it1 = lKFsSharingWords.begin(); it1!=lKFsSharingWords.end(); it1++){
+        KeyFrame* kF = *it1;
+        if(kF->mnLoopWords>maxCommonWords)
+            maxCommonWords=kF->mnLoopWords;
+
+        cout << kF->mnId << " : " << kF->mnLoopWords << endl;
+      }
+    int minCommonWords = maxCommonWords*0.8f;
+
+    int nscores=0;
+
+    set<KeyFrame*>  lKFsSharingWords2;
+
+    // Compute similarity score. Retain the matches whose score is higher than minScore
+    for(it1=lKFsSharingWords.begin(); it1!=lKFsSharingWords.end(); it1++)
+      {
+        KeyFrame* kF = *it1;
+
+        if(kF->mnLoopWords>minCommonWords)
+          {
+            nscores++;
+
+            // Find max score
+            float maxScore = 0;
+            for(it2 = kFs1.begin(); it2!= kFs1.end(); it2++){
+                KeyFrame* kF1 = *it2;
+                float si = mpVoc->score(kF1->mBowVec, kF->mBowVec);
+                if(si > maxScore){
+                    maxScore = si;
+                  }
+                //pKFi->mLoopScore = si;
+              }
+
+            if(maxScore>=minScore)
+              lKFsSharingWords2.insert(kF);
+          }
+      }
+    cout << "lKFsSharingWords2.size(): " << lKFsSharingWords2.size() << endl;
+
+    return lKFsSharingWords2;
+  }
+
   vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
   {
     set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
@@ -192,8 +281,6 @@ namespace ORB_SLAM2
               }
           }
       }
-
-
     return vpLoopCandidates;
   }
 

@@ -57,6 +57,9 @@ public:
    // Inter robot loop closure detection -- added by @itzsid
    std::vector<KeyFrame*> DetectLoopCandidatesInterRobot(const DBoW2::BowVector& keyFrameBoWVec, int mnId,  float minScore);
 
+   // Detect loop candidates between two set of keyframes -- added by @itzsid
+    set<KeyFrame*> DetectLoopCandidatesAmongTwoSets(std::set<ORB_SLAM2::KeyFrame*> kFs1, std::set<ORB_SLAM2::KeyFrame*> kFs2, float minScore);
+
    // Relocalization
    std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F);
 

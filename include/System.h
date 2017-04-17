@@ -121,13 +121,23 @@ public:
 
     void ResetAndInitialize(cv::Mat startingPose);
 
+    // added by @itzsid
+    set<KeyFrame*> getKeyframes(std::vector<gtsam::Key> keys);
     set<gtsam::Key> getCoVisibleKeys(gtsam::Key key);
+    ORBVocabulary* getVocabulary(){
+      return mpVocabulary;
+    }
+
 
     bool bUseLoopClosure_;
     bool bUseInterRobotLoopCloser_;
 
     int robotID_;
     char robotName_;
+
+    // KeyFrame database for place recognition (relocalization and loop detection). -- moved by @itzsid
+    KeyFrameDatabase* mpKeyFrameDatabase;
+
 
 private:
 
@@ -137,8 +147,6 @@ private:
     // ORB vocabulary used for place recognition and feature matching.
     ORBVocabulary* mpVocabulary;
 
-    // KeyFrame database for place recognition (relocalization and loop detection).
-    KeyFrameDatabase* mpKeyFrameDatabase;
 
     // Map structure that stores the pointers to all KeyFrames and MapPoints.
     Map* mpMap;

@@ -129,6 +129,8 @@ public:
 
     void ResetAndInitialize(cv::Mat startingPose);
 
+    // added by @itzsid
+    set<KeyFrame*> getKeyframes(std::vector<gtsam::Key> keys);
     set<gtsam::Key> getCoVisibleKeys(gtsam::Key key);
 
 protected:
