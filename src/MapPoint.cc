@@ -23,6 +23,18 @@
 
 #include<mutex>
 
+#include <boost/serialization/serialization.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/split_free.hpp>
+
+
 namespace ORB_SLAM2
 {
 
@@ -416,6 +428,118 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
     return nScale;
 }
 
+
+template<class Archive>
+    void MapPoint::save(Archive & ar, const unsigned int version) const
+    {
+        unsigned int nItems;bool is_id = false, is_valid = false;;
+        size_t t_size;
+        long unsigned int t_nId;
+
+        if (mbBad)
+            return;
+
+        ar & const_cast<long unsigned int &> (mnId );
+        //cout << "[" << mnId << "]" ;
+        ar & nNextId;
+        ar & const_cast<long int &> (mnFirstKFid);
+        ar & const_cast<long int &> (mnFirstFrame);
+        ar & const_cast<int &> (nObs);
+        ar & const_cast<float &> (mTrackProjX);
+        ar & const_cast<float &> (mTrackProjY);
+        ar & const_cast<float &> (mTrackProjXR);
+        ar & const_cast<bool &> (mbTrackInView);
+        ar & const_cast<int &> (mnTrackScaleLevel);
+        ar & const_cast<float &> (mTrackViewCos);
+        ar & const_cast<long unsigned int &> (mnTrackReferenceForFrame);
+        ar & const_cast<long unsigned int &> (mnLastFrameSeen);
+        ar & const_cast<long unsigned int &> (mnBALocalForKF);
+        ar & const_cast<long unsigned int &> (mnFuseCandidateForKF);
+        ar & const_cast<long unsigned int &> (mnLoopPointForKF);
+        ar & const_cast<long unsigned int &> (mnCorrectedByKF);
+        ar & const_cast<long unsigned int &> (mnCorrectedReference);
+
+        ar & const_cast<cv::Mat &> (mPosGBA);
+        ar & const_cast<long unsigned int &> (mnBAGlobalForKF);
+        ar & const_cast<cv::Mat &> (mWorldPos);
+        ar & const_cast<cv::Mat &> (mNormalVector);
+        ar & const_cast<cv::Mat &> (mDescriptor);
+        ar & const_cast<int &> (mnVisible);
+        ar & const_cast<int &> (mnFound);
+        ar & const_cast<bool &> (mbBad);
+        ar & const_cast<float &> (mfMinDistance);
+        ar & const_cast<float &> (mfMaxDistance);
+    }
+
+    template<class Archive>
+    void MapPoint::load(Archive & ar, const unsigned int version)
+    {
+        unsigned int nItems;bool is_id = false, is_valid = false;
+        size_t t_size;
+
+        long unsigned int t_nId;
+
+        ar & const_cast<long unsigned int &> (mnId );
+        //cout << "[" << mnId << "]" ;
+        ar & nNextId;
+        ar & const_cast<long int &> (mnFirstKFid);
+        ar & const_cast<long int &> (mnFirstFrame);
+        ar & const_cast<int &> (nObs);
+        ar & const_cast<float &> (mTrackProjX);
+        ar & const_cast<float &> (mTrackProjY);
+        ar & const_cast<float &> (mTrackProjXR);
+        ar & const_cast<bool &> (mbTrackInView);
+        ar & const_cast<int &> (mnTrackScaleLevel);
+        ar & const_cast<float &> (mTrackViewCos);
+        ar & const_cast<long unsigned int &> (mnTrackReferenceForFrame);
+        ar & const_cast<long unsigned int &> (mnLastFrameSeen);
+        ar & const_cast<long unsigned int &> (mnBALocalForKF);
+        ar & const_cast<long unsigned int &> (mnFuseCandidateForKF);
+        ar & const_cast<long unsigned int &> (mnLoopPointForKF);
+        ar & const_cast<long unsigned int &> (mnCorrectedByKF);
+        ar & const_cast<long unsigned int &> (mnCorrectedReference);
+
+        ar & const_cast<cv::Mat &> (mPosGBA);
+        ar & const_cast<long unsigned int &> (mnBAGlobalForKF);
+        ar & const_cast<cv::Mat &> (mWorldPos);
+        ar & const_cast<cv::Mat &> (mNormalVector);
+        ar & const_cast<cv::Mat &> (mDescriptor);
+       ar & const_cast<int &> (mnVisible);
+        ar & const_cast<int &> (mnFound);
+        ar & const_cast<bool &> (mbBad);
+        ar & const_cast<float &> (mfMinDistance);
+        ar & const_cast<float &> (mfMaxDistance);
+    }
+
+
+    // Explicit template instantiation
+    template void MapPoint::save<boost::archive::binary_oarchive>(
+    boost::archive::binary_oarchive &,
+    const unsigned int) const;
+    template void MapPoint::save<boost::archive::binary_iarchive>(
+    boost::archive::binary_iarchive &,
+    const unsigned int) const;
+    template void MapPoint::save<boost::archive::text_oarchive>(
+    boost::archive::text_oarchive &,
+    const unsigned int) const;
+
+    template void MapPoint::save<boost::archive::text_iarchive>(
+    boost::archive::text_iarchive &,
+    const unsigned int) const;
+
+    template void MapPoint::load<boost::archive::binary_oarchive>(
+    boost::archive::binary_oarchive &,
+    const unsigned int);
+    template void MapPoint::load<boost::archive::binary_iarchive>(
+    boost::archive::binary_iarchive &,
+    const unsigned int);
+
+    template void MapPoint::load<boost::archive::text_oarchive>(
+    boost::archive::text_oarchive &,
+    const unsigned int);
+    template void MapPoint::load<boost::archive::text_iarchive>(
+    boost::archive::text_iarchive &,
+    const unsigned int);
 
 
 } //namespace ORB_SLAM

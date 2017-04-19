@@ -32,6 +32,8 @@ find_package(OpenCV 2.4.3 REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(GTSAM QUIET)
+find_package(Boost REQUIRED)
+
 link_directories(${GTSAM_LIBRARY_DIRS})
 
 # Build with ROS
@@ -89,6 +91,7 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 gtsam
 ${roscpp_LIBRARIES} ${std_msgs_LIBRARIES}
 ${cv_bridge_LIBRARIES} ${sensor_msgs_LIBRARIES}
+boost_serialization
 )
 
 # Build examples

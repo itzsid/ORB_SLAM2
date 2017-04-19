@@ -28,22 +28,24 @@
 #include "ORBextractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
-
+#include "cvSerialization.h"
 #include <gtsam/inference/Symbol.h>
 #include <mutex>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 
 namespace ORB_SLAM2
 {
 
-class Map;
-class MapPoint;
-class Frame;
-class KeyFrameDatabase;
+  class Map;
+  class MapPoint;
+  class Frame;
+  class KeyFrameDatabase;
 
-class KeyFrame
-{
-public:
+  class KeyFrame
+  {
+  public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
 
     // Pose functions
@@ -110,16 +112,15 @@ public:
     float ComputeSceneMedianDepth(const int q);
 
     static bool weightComp( int a, int b){
-        return a>b;
+      return a>b;
     }
 
     static bool lId(KeyFrame* pKF1, KeyFrame* pKF2){
-        return pKF1->mnId<pKF2->mnId;
+      return pKF1->mnId<pKF2->mnId;
     }
 
-
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
-public:
+  public:
 
     static long unsigned int nNextId;
     long unsigned int mnId;
@@ -197,7 +198,7 @@ public:
     bool mbFirstConnection;
 
     // The following variables need to be accessed trough a mutex to be thread safe.
-protected:
+  protected:
 
     // SE3 Pose and camera center
     cv::Mat Tcw;
@@ -227,7 +228,7 @@ protected:
     // Bad flags
     bool mbNotErase;
     bool mbToBeErased;
-    bool mbBad;    
+    bool mbBad;
 
     float mHalfBaseline; // Only for visualization
 
@@ -236,7 +237,20 @@ protected:
     std::mutex mMutexPose;
     std::mutex mMutexConnections;
     std::mutex mMutexFeatures;
-};
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, unsigned int version)
+    {
+      boost::serialization::split_member(ar, *this, version);
+    }
+
+    template<class Archive>
+    void save(Archive & ar, unsigned int version) const;
+
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version);
+  };
 
 } //namespace ORB_SLAM
 
