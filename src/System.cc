@@ -331,14 +331,24 @@ namespace ORB_SLAM2
   void System::Shutdown()
   {
     mpLocalMapper->RequestFinish();
-    mpLoopCloser->RequestFinish();
+
+    if(bUseLoopClosure_)
+      mpLoopCloser->RequestFinish();
+
     mpViewer->RequestFinish();
 
     // Wait until all thread have effectively stopped
-    while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()  ||
-          !mpViewer->isFinished()      || mpLoopCloser->isRunningGBA())
+    while(!mpLocalMapper->isFinished()  ||      !mpViewer->isFinished()  )
       {
-        usleep(5000);
+
+        if(bUseLoopClosure_){
+          if (!mpLoopCloser->isFinished() ||  mpLoopCloser->isRunningGBA()){
+              usleep(5000);
+            }
+          }
+        else{
+            usleep(5000);
+          }
       }
 
     pangolin::BindToContext("ORB-SLAM2: Map Viewer");

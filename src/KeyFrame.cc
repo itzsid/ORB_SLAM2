@@ -69,6 +69,20 @@ namespace ORB_SLAM2
     SetPose(F.mTcw);
   }
 
+  // Default serializing Constructor
+  KeyFrame::KeyFrame():
+      mnFrameId(0),  mTimeStamp(0.0), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
+      mfGridElementWidthInv(0.0), mfGridElementHeightInv(0.0),
+      mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
+      mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
+      fx(0.0), fy(0.0), cx(0.0), cy(0.0), invfx(0.0), invfy(0.0),
+      mbf(0.0), mb(0.0), mThDepth(0.0), N(0), mnScaleLevels(0), mfScaleFactor(0),
+      mfLogScaleFactor(0.0),
+      mnMinX(0), mnMinY(0), mnMaxX(0),
+      mnMaxY(0)
+  {}
+
+
   void KeyFrame::ComputeBoW()
   {
     if(mBowVec.empty() || mFeatVec.empty())
@@ -682,6 +696,33 @@ namespace ORB_SLAM2
     return vDepths[(vDepths.size()-1)/q];
   }
 
+  void KeyFrame::computeMinScore(){
+    // Compute reference BoW similarity score
+    // This is the lowest score to a connected keyframe in the covisibility graph
+    // We will impose loop candidates to have a higher similarity than this
+    vector<KeyFrame*> vpConnectedKeyFrames = GetVectorCovisibleKeyFrames();
+    const DBoW2::BowVector &CurrentBowVec = mBowVec;
+    float minScore = 1;
+    for(size_t i=0; i<vpConnectedKeyFrames.size(); i++)
+      {
+        KeyFrame* pKF = vpConnectedKeyFrames[i];
+        if(pKF->isBad())
+          continue;
+        const DBoW2::BowVector &BowVec = pKF->mBowVec;
+
+        float score = mpORBvocabulary->score(CurrentBowVec, BowVec);
+
+        if(score<minScore)
+          minScore = score;
+
+        // Insert to neighboring MnIds
+        if(!neighboringMnIDs.count(pKF->mnId)){
+            neighboringMnIDs.insert(pKF->mnId);
+          }
+      }
+    minScoreStored = minScore;
+  }
+
 
   /** Serialization support for cv::Mat */
   template<class Archive>
@@ -747,6 +788,8 @@ namespace ORB_SLAM2
     ar & const_cast<cv::Mat &> (Ow);
     ar & const_cast<cv::Mat &> (Cw);
     ar & const_cast<std::vector< std::vector <std::vector<size_t> > > &> (mGrid);
+    ar & const_cast<float &> (minScoreStored);
+    ar & const_cast<std::set<long unsigned int> &>(neighboringMnIDs);
 
     //    Extract bag of words vector
     int mBowVecSize = mBowVec.size();
@@ -772,20 +815,19 @@ namespace ORB_SLAM2
           }
       }
 
-
-    int nItems = mvpMapPoints.size(); bool is_id;
+    int nItems = mvpMapPoints.size(); int is_id;
     ar & const_cast<int &>(nItems);
     //cout << "{INFO}mvpMapPoints nItems -" << nItems << endl;
     for (std::vector<MapPoint*>::const_iterator it = mvpMapPoints.begin(); it != mvpMapPoints.end(); ++it) {
         if (*it == NULL){
-            is_id = false;
-            ar & const_cast<bool &>(is_id);
-            continue;
+            is_id = 0;
+            ar & const_cast<int &>(is_id);
+           continue;
           }
         else
           {
             is_id = true;
-            ar & const_cast<bool &>(is_id);
+            ar & const_cast<int &>(is_id);
             MapPoint* mapPoint = *it;
             ar & const_cast<MapPoint &>(*mapPoint);
           }
@@ -796,6 +838,7 @@ namespace ORB_SLAM2
   template<class Archive>
   void KeyFrame::load(Archive & ar, const unsigned int version)
   {
+  //  cout << "Loading..." << endl;
     ar & const_cast<long unsigned int &>(nNextId);
     ar & const_cast<long unsigned int &> (mnId);
     ar & const_cast<long unsigned int &> (mnFrameId);
@@ -830,12 +873,14 @@ namespace ORB_SLAM2
     ar & const_cast<float &> (mb);
     ar & const_cast<float &> (mThDepth);
     ar & const_cast<int &> (N);
-
+//cout << "0..." << endl;
     ar & const_cast<std::vector<cv::KeyPoint> &> (mvKeys);
     ar & const_cast<std::vector<cv::KeyPoint> &> (mvKeysUn);
     ar & const_cast<std::vector<float> &> (mvuRight);
     ar & const_cast<std::vector<float> &> (mvDepth);
     ar & const_cast<cv::Mat &> (mDescriptors);
+
+  //  cout << "1..." << endl;
 
     ar & const_cast<cv::Mat &> (mTcp);
     ar & const_cast<int &> (mnScaleLevels);
@@ -844,6 +889,7 @@ namespace ORB_SLAM2
     ar & const_cast<std::vector<float> &> (mvScaleFactors);
     ar & const_cast<std::vector<float> &> (mvLevelSigma2);
     ar & const_cast<std::vector<float> &> (mvInvLevelSigma2);
+//    cout << "2..." << endl;
 
     ar & const_cast<int &> (mnMinX);
     ar & const_cast<int &> (mnMinY);
@@ -855,19 +901,23 @@ namespace ORB_SLAM2
     ar & const_cast<cv::Mat &> (Ow);
     ar & const_cast<cv::Mat &> (Cw);
     ar & const_cast<std::vector< std::vector <std::vector<size_t> > > &> (mGrid);
+    ar & const_cast<float &> (minScoreStored);
+    ar & const_cast<std::set<long unsigned int> &>(neighboringMnIDs);
 
     //BoW
     int bowVecSize; ar & const_cast<int &>(bowVecSize);
-    DBoW2::BowVector mBowVec;
+    mBowVec.clear();
     for(int wordId_i = 0; wordId_i < bowVecSize; wordId_i++){
         unsigned int wordId; ar & const_cast<unsigned int &>(wordId);
         double wordValue; ar & const_cast<double &>(wordValue);
         mBowVec.addWeight(wordId, wordValue);
       }
 
+  //  cout << "4..." << endl;
+
     // Extract feature vector
     int featVecSize; ar & const_cast<int &>(featVecSize);
-    DBoW2::FeatureVector mFeatVec;
+    mFeatVec.clear();
     for(size_t vocI = 0; vocI < featVecSize; vocI++)
       {
         DBoW2::NodeId nodeID; ar & const_cast<unsigned int &>(nodeID);
@@ -877,28 +927,30 @@ namespace ORB_SLAM2
             mFeatVec.addFeature(nodeID, feat);
           }
       }
+    //cout << "5..." << endl;
 
-    int nItems; bool is_id; long unsigned int t_nId;
+    int nItems; int is_id; 
 
     ar & const_cast<int &>(nItems);
     mvpMapPoints.resize(nItems);
     int j=0;
     for (int i = 0; i < nItems; ++i) {
 
-        ar & const_cast<bool &>(is_id);
+        ar & const_cast<int &>(is_id);
         if (is_id)
           {
-            j++;
-            MapPoint* mapPoint = NULL;
+            MapPoint* mapPoint = new MapPoint;
             ar & const_cast<MapPoint &>(*mapPoint);
             mvpMapPoints[i] = mapPoint;
           }
-        else
+	        else
           {
             MapPoint* mapPoint = NULL;
             mvpMapPoints[i] = mapPoint;
           }
       }
+  //  cout << "6..." << endl;
+
   }
 
 

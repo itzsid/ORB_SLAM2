@@ -47,6 +47,7 @@ namespace ORB_SLAM2
   {
   public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
+    KeyFrame();
 
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
@@ -119,8 +120,13 @@ namespace ORB_SLAM2
       return pKF1->mnId<pKF2->mnId;
     }
 
+    void computeMinScore();
+
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
   public:
+
+    float minScoreStored; // added by @itzsid
+    std::set<long unsigned int> neighboringMnIDs; // added by @itzsid
 
     static long unsigned int nNextId;
     long unsigned int mnId;
