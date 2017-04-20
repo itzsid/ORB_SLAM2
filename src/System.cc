@@ -31,7 +31,7 @@ namespace ORB_SLAM2
 
   System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                  const bool bUseViewer, const bool bUseLoopClosure, const bool bUseInterRobotLoopCloser, int robotID, char robotName, bool correctLoop):mSensor(sensor),mbReset(false),mbActivateLocalizationMode(false),
-    mbDeactivateLocalizationMode(false), bUseLoopClosure_(bUseLoopClosure), bUseInterRobotLoopCloser_(bUseInterRobotLoopCloser), robotID_(robotID), robotName_(robotName)
+    mbDeactivateLocalizationMode(false), bUseLoopClosure_(bUseLoopClosure), bUseInterRobotLoopCloser_(bUseInterRobotLoopCloser), robotID_(robotID), robotName_(robotName), bUseViewer_(bUseViewer)
   {
     // Output welcome message
     cout << endl <<
@@ -230,8 +230,8 @@ namespace ORB_SLAM2
 
     cv::Mat trackedPose =  mpTracker->GrabImageRGBD(im,depthmap,timestamp, key);
 
-    // Check if loop is closed
     bool hasNewLoopClosure = false;
+    // Check if loop is closed
     if(bUseLoopClosure_){
         if(!mpLoopCloser->LoopClosureIsRetrieved()){ // new loop closure
             hasNewLoopClosure = true;
@@ -330,28 +330,46 @@ namespace ORB_SLAM2
 
   void System::Shutdown()
   {
+
     mpLocalMapper->RequestFinish();
+    cout << "Local Mapper Finish Requested " << endl;
 
     if(bUseLoopClosure_)
       mpLoopCloser->RequestFinish();
 
-    mpViewer->RequestFinish();
+    cout << "Loop Closer Finish Requested " << endl;
+
+    if(bUseViewer_)
+      mpViewer->RequestFinish();
+
+    cout << "Viewer Finish Requested " << endl;
 
     // Wait until all thread have effectively stopped
-    while(!mpLocalMapper->isFinished()  ||      !mpViewer->isFinished()  )
-      {
 
-        if(bUseLoopClosure_){
-          if (!mpLoopCloser->isFinished() ||  mpLoopCloser->isRunningGBA()){
-              usleep(5000);
-            }
-          }
-        else{
+    while(!mpLocalMapper->isFinished() )
+      {
+        usleep(5000);
+      }
+
+    cout << "Local Mapper finished " << endl;
+
+    if(bUseViewer_){
+        while(!mpViewer->isFinished()){
             usleep(5000);
           }
       }
 
-    pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+    cout << "Viewer finished " << endl;
+
+    if(bUseLoopClosure_){
+        while (!mpLoopCloser->isFinished() ||  mpLoopCloser->isRunningGBA()){
+            usleep(5000);
+          }
+      }
+    cout << "Loop Closure finished " << endl;
+
+    if(bUseViewer_)
+     pangolin::BindToContext("ORB-SLAM2: Map Viewer");
   }
 
   void System::SaveTrajectoryTUM(const string &filename)

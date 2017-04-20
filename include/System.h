@@ -128,7 +128,7 @@ public:
       return mpVocabulary;
     }
 
-
+    bool bUseViewer_;
     bool bUseLoopClosure_;
     bool bUseInterRobotLoopCloser_;
 
