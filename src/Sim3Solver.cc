@@ -34,7 +34,7 @@ namespace ORB_SLAM2
 {
 
 
-  Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> &vpMatched12, const bool bFixScale):
+  Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> &vpMatched12, const bool bFixScale, const bool bUseMnID):
     mnIterations(0), mnBestInliers(0), mbFixScale(bFixScale)
   {
     mpKF1 = pKF1;
@@ -72,8 +72,15 @@ namespace ORB_SLAM2
             if(pMP1->isBad() || pMP2->isBad())
               continue;
 
-            int indexKF1 = pMP1->GetIndexInKeyFrame(pKF1);
-            int indexKF2 = pMP2->GetIndexInKeyFrame(pKF2);
+            int indexKF1, indexKF2;
+            if(!bUseMnID){
+            indexKF1 = pMP1->GetIndexInKeyFrame(pKF1);
+            indexKF2 = pMP2->GetIndexInKeyFrame(pKF2);
+              }
+            else{
+                indexKF1 = pMP1->GetIndexInKeyFrameMnID(pKF1);
+                indexKF2 = pMP2->GetIndexInKeyFrameMnID(pKF2);
+              }
 
             if(indexKF1<0 || indexKF2<0)
               continue;
@@ -263,12 +270,14 @@ namespace ORB_SLAM2
         return cv::Mat();
       }
 
+
     vector<size_t> vAvailableIndices;
 
     cv::Mat P3Dc1i(3,3,CV_32F);
     cv::Mat P3Dc2i(3,3,CV_32F);
 
     int nCurrentIterations = 0;
+
     while(mnIterations<mRansacMaxIts && nCurrentIterations<nIterations)
       {
         nCurrentIterations++;
@@ -339,6 +348,7 @@ namespace ORB_SLAM2
 
   void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
   {
+    //cout << P1 << " " << P2 << endl;
     // Custom implementation of:
     // Horn 1987, Closed-form solution of absolute orientataion using unit quaternions
 
@@ -456,6 +466,8 @@ namespace ORB_SLAM2
     vector<cv::Mat> vP1im2, vP2im1;
     Project(mvX3Dc2,vP2im1,mT12i,mK1);
     Project(mvX3Dc1,vP1im2,mT21i,mK2);
+
+    //cout << "mvP1im1.size(): " << mvP1im1.size() << endl;
 
     mnInliersi=0;
 

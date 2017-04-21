@@ -54,7 +54,7 @@ public:
 
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
-                            g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
+                            g2o::Sim3 &g2oS12, const float th2, const bool bFixScale, const bool bUseMnID = false);
 
     static int OptimizeSim3InterRobot(const vector<cv::Mat>& mapPoints,
                                                                    const vector<cv::KeyPoint>& keypoints,

@@ -345,6 +345,16 @@ int MapPoint::GetIndexInKeyFrame(KeyFrame *pKF)
         return -1;
 }
 
+int MapPoint::GetIndexInKeyFrameMnID(KeyFrame *pKF)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    if(mObservationsMnID.count(pKF->mnId))
+        return mObservationsMnID[pKF->mnId];
+    else
+        return -1;
+}
+
+
 bool MapPoint::IsInKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexFeatures);
@@ -441,6 +451,21 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
 }
 
 
+void MapPoint::copyMObservations()
+{
+  //std::cout << "Copying MObservations" << endl;
+  std::map<KeyFrame*,size_t>::iterator it;
+  for(it = mObservations.begin(); it!= mObservations.end(); it++){
+      KeyFrame* kF = it->first;
+      size_t num = it->second;
+      if(!mObservationsMnID.count(kF->mnId)){
+          mObservationsMnID.insert(make_pair(kF->mnId, num));
+        }
+    }
+ // std::cout << "Size of Mobservations: " << mObservations.size() << endl;
+}
+
+
 template<class Archive>
     void MapPoint::save(Archive & ar, const unsigned int version) const
     {
@@ -482,6 +507,7 @@ template<class Archive>
         ar & const_cast<bool &> (mbBad);
         ar & const_cast<float &> (mfMinDistance);
         ar & const_cast<float &> (mfMaxDistance);
+        ar & const_cast<std::map<long unsigned int,size_t> &> (mObservationsMnID);
 
     }
 
@@ -523,6 +549,10 @@ template<class Archive>
         ar & const_cast<bool &> (mbBad);
         ar & const_cast<float &> (mfMinDistance);
         ar & const_cast<float &> (mfMaxDistance);
+        ar & const_cast<std::map<long unsigned int,size_t> &> (mObservationsMnID);
+
+        //cout << mWorldPos << endl;
+        //cout << mDescriptor << endl;
     }
 
 

@@ -51,6 +51,7 @@ public:
 
    void clear();
 
+   vector<KeyFrame*> DetectLoopCandidatesInterRobotOffline(KeyFrame* pKF, float minScore);
    vector<KeyFrame*> DetectLoopCandidates(KeyFrame* pKF, std::set<long unsigned int> neighboringMnIDs, float minScore);
 
    // Loop Detection

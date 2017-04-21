@@ -36,7 +36,7 @@ class Sim3Solver
 {
 public:
 
-    Sim3Solver(KeyFrame* pKF1, KeyFrame* pKF2, const std::vector<MapPoint*> &vpMatched12, const bool bFixScale = true);
+    Sim3Solver(KeyFrame* pKF1, KeyFrame* pKF2, const std::vector<MapPoint*> &vpMatched12, const bool bFixScale = true, const bool bUseMnID = false);
 
     // Another constructor for loop closure across robots
     Sim3Solver(const vector<cv::Mat>& mapPoints,

@@ -790,6 +790,8 @@ namespace ORB_SLAM2
     ar & const_cast<std::vector< std::vector <std::vector<size_t> > > &> (mGrid);
     ar & const_cast<float &> (minScoreStored);
     ar & const_cast<std::set<long unsigned int> &>(neighboringMnIDs);
+    ar & const_cast<gtsam::Key &>(key_);
+
 
     //    Extract bag of words vector
     int mBowVecSize = mBowVec.size();
@@ -829,6 +831,7 @@ namespace ORB_SLAM2
             is_id = true;
             ar & const_cast<int &>(is_id);
             MapPoint* mapPoint = *it;
+            mapPoint->copyMObservations();
             ar & const_cast<MapPoint &>(*mapPoint);
           }
       }
@@ -903,6 +906,7 @@ namespace ORB_SLAM2
     ar & const_cast<std::vector< std::vector <std::vector<size_t> > > &> (mGrid);
     ar & const_cast<float &> (minScoreStored);
     ar & const_cast<std::set<long unsigned int> &>(neighboringMnIDs);
+    ar & const_cast<gtsam::Key &>(key_);
 
     //BoW
     int bowVecSize; ar & const_cast<int &>(bowVecSize);

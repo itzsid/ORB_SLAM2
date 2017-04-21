@@ -56,6 +56,7 @@ public:
     void EraseObservation(KeyFrame* pKF);
 
     int GetIndexInKeyFrame(KeyFrame* pKF);
+    int GetIndexInKeyFrameMnID(KeyFrame *pKF);
     bool IsInKeyFrame(KeyFrame* pKF);
 
     void SetBadFlag();
@@ -81,6 +82,7 @@ public:
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
     int PredictScale(const float &currentDist, Frame* pF);
+    void copyMObservations();
 
 public:
     long unsigned int mnId;
@@ -125,6 +127,7 @@ protected:
 
      // Keyframes observing the point and associated index in keyframe
      std::map<KeyFrame*,size_t> mObservations;
+     std::map<long unsigned int,size_t> mObservationsMnID;
 
      // Mean viewing direction
      cv::Mat mNormalVector;
