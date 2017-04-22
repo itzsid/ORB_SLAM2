@@ -473,9 +473,9 @@ template<class Archive>
         size_t t_size;
         long unsigned int t_nId;
 
-        if(mbBad){
-            std::cout << "Bad Point" << endl;
-          }
+//        if(mbBad){
+//            //std::cout << "Bad Point" << endl;
+//          }
 
         ar & const_cast<long unsigned int &> (mnId );
         //cout << "[" << mnId << "]" ;

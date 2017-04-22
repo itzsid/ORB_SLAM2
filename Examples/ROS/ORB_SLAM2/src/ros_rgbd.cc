@@ -51,22 +51,26 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "RGBD");
     ros::start();
 
-    if(argc != 3)
+    if(argc != 5)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;        
+        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings rgb_topic depth_topic" << endl;        
         ros::shutdown();
         return 1;
     }    
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true, true, false, 0, 'a', true);
 
     ImageGrabber igb(&SLAM);
 
     ros::NodeHandle nh;
+    std::string rgbTopic = argv[3];
+    std::string depthTopic = argv[4];
 
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "camera/depth_registered/image_raw", 1);
+    cout << "RGB Topic: " << rgbTopic << endl;
+    cout << "Depth Topic: " << depthTopic << endl;
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, rgbTopic, 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, depthTopic, 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
