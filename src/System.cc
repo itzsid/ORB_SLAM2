@@ -25,6 +25,7 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+#include <time.h>
 
 namespace ORB_SLAM2
 {
@@ -133,6 +134,8 @@ namespace ORB_SLAM2
         mpLoopCloserInterRobot->SetTracker(mpTracker);
         mpLoopCloserInterRobot->SetLocalMapper(mpLocalMapper);
       }
+
+    cout << "ORBSLAM Constructed" << endl; fflush(stdout);
   }
 
   cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
@@ -228,7 +231,12 @@ namespace ORB_SLAM2
         }
     }
 
+    clock_t start = clock(); // Clock
+    double duration;
     cv::Mat trackedPose =  mpTracker->GrabImageRGBD(im,depthmap,timestamp, key);
+    duration = (clock() - start)/(double)CLOCKS_PER_SEC;
+    //std::cout << "mpTracker took: " << duration << " seconds" << std::endl;
+
 
     bool hasNewLoopClosure = false;
     // Check if loop is closed

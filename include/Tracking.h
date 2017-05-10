@@ -133,6 +133,14 @@ public:
     set<KeyFrame*> getKeyframes(std::vector<gtsam::Key> keys);
     set<gtsam::Key> getCoVisibleKeys(gtsam::Key key);
 
+    bool keyFrameAdded(){
+      if(gtsam::symbolIndex(mCurrentFrame.key_) == gtsam::symbolIndex(mpReferenceKF->key_)){
+          return true;
+        }
+      else
+        return false;
+    }
+
 protected:
 
     // Main tracking function. It is independent of the input sensor.

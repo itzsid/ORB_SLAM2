@@ -245,8 +245,12 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
         imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
 
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth, key);
-
+    clock_t start = clock(); // Clock
+    double duration;
     Track();
+    duration = (clock() - start)/(double)CLOCKS_PER_SEC;
+    //std::cout << "Track() took: " << duration << " seconds" << std::endl;
+
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -528,6 +532,9 @@ void Tracking::Track()
         mlFrameTimes.push_back(mlFrameTimes.back());
         mlbLost.push_back(mState==LOST);
     }
+
+    //cout << "Frame Symbol: " << gtsam::symbolChr(mCurrentFrame.key_) << gtsam::symbolIndex(mCurrentFrame.key_)  << endl;
+    //cout << "KF Symbol: " << gtsam::symbolChr(mpReferenceKF->key_) << gtsam::symbolIndex(mpReferenceKF->key_)  << endl;
 
 }
 
