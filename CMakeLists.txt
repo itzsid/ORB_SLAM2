@@ -37,11 +37,11 @@ find_package(Boost REQUIRED)
 link_directories(${GTSAM_LIBRARY_DIRS})
 
 # Build with ROS
-find_package(roscpp QUIET)
-find_package(std_msgs QUIET)
-find_package(cv_bridge QUIET)
-find_package(sensor_msgs QUIET)
-find_package(distributed_mapper_msgs QUIET)
+find_package(roscpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(distributed_mapper_msgs REQUIRED)
 include_directories(${roscpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS} ${distributed_mapper_msgs_INCLUDE_DIRS} ${cv_bridge_INCLUDE_DIRS})
 
 include_directories(

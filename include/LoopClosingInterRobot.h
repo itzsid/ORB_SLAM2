@@ -46,6 +46,7 @@
 #include "distributed_mapper_msgs/Indices.h" // Indices
 #include "distributed_mapper_msgs/Measurement.h" // Measurement
 
+#include <map>
 
 // Loop closure structure
 typedef struct LoopClosureInterRobotStruct{
@@ -83,6 +84,8 @@ public:
     // Main function
     void Publish();
     void Subscribe(const distributed_mapper_msgs::Keyframe& keyframe);
+    bool Match(distributed_mapper_msgs::Keyframe keyframe);
+    void MatchPreviousKeyFrames();
 
     void InsertKeyFrame(KeyFrame *pKF);
 
@@ -170,7 +173,7 @@ protected:
 
     std::mutex mMutexLoopQueue;
 
-    // Loop detector parameters
+    // Loop detector parametersconst distributed_mapper_msgs::Keyframe& keyframe
     float mnCovisibilityConsistencyTh;
 
     // Loop detector variables
@@ -207,6 +210,9 @@ protected:
 
     // Measurement publisher
     ros::Publisher measurement_pub_;
+
+    // Vector of keyframes
+    std::map<int, std::vector<distributed_mapper_msgs::Keyframe> > keyframes_;
 
 };
 

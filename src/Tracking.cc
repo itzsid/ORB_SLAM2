@@ -1652,8 +1652,14 @@ void Tracking::Reset()
     mpViewer->RequestStop();
 
     cout << "System Reseting" << endl;
-    while(!mpViewer->isStopped())
-        usleep(3000);
+    //while(!mpViewer->isStopped())
+    //    usleep(3000);
+
+    // Match previous keyframes
+    if(mbLoopCloseInterRobot){
+        std::cout << "Trying to match to previous keyframes: " << std::endl;
+        mpLoopClosingInterRobot->MatchPreviousKeyFrames();
+    }
 
     // Reset Local Mapping
     cout << "Reseting Local Mapper...";
@@ -1700,6 +1706,12 @@ void Tracking::Reset()
 
 void Tracking::ResetAndInitialize(cv::Mat startingPose)
 {
+    // Match previous keyframes
+    if(mbLoopCloseInterRobot){
+        std::cout << "Trying to match to previous keyframes: " << std::endl;
+        mpLoopClosingInterRobot->MatchPreviousKeyFrames();
+    }
+
     // Reset Local Mapping
     cout << "Reseting Local Mapper...";
     mpLocalMapper->RequestReset();
