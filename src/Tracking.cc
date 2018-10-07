@@ -223,6 +223,7 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 
 cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, gtsam::Key key)
 {
+    std::cout << "Grab image rgbd " << std::endl; fflush(stdout);
     mImGray = imRGB;
     cv::Mat imDepth = imD;
 
@@ -244,7 +245,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
 
+    std::cout << "reached 0" << std::endl; fflush(stdout);
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth, key);
+    std::cout << "reached 1" << std::endl; fflush(stdout);
     clock_t start = clock(); // Clock
     double duration;
     Track();
@@ -287,6 +290,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+    cout << "Tracking 0"   << endl;
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -322,12 +326,15 @@ void Tracking::Track()
 
             if(mState==OK)
             {
+    cout << "Tracking 1"   << endl;
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
+    cout << "Tracking 2"   << endl;
                     bOK = TrackReferenceKeyFrame();
+    cout << "Tracking 3"   << endl;
                 }
                 else
                 {
@@ -533,7 +540,7 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
-    //cout << "Frame Symbol: " << gtsam::symbolChr(mCurrentFrame.key_) << gtsam::symbolIndex(mCurrentFrame.key_)  << endl;
+    cout << "Frame Symbol: " << gtsam::symbolChr(mCurrentFrame.key_) << gtsam::symbolIndex(mCurrentFrame.key_)  << endl;
     //cout << "KF Symbol: " << gtsam::symbolChr(mpReferenceKF->key_) << gtsam::symbolIndex(mpReferenceKF->key_)  << endl;
 
 }
@@ -902,6 +909,8 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
+
+   std::cout << "Track Reference KF: 0 " << std::endl; fflush(stdout);
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 
@@ -910,15 +919,19 @@ bool Tracking::TrackReferenceKeyFrame()
     ORBmatcher matcher(0.7,true);
     vector<MapPoint*> vpMapPointMatches;
 
+   std::cout << "Track Reference KF: 1 " << std::endl; fflush(stdout);
     int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
+   std::cout << "Track Reference KF: 2 " << std::endl; fflush(stdout);
 
     if(nmatches<15)
         return false;
 
     mCurrentFrame.mvpMapPoints = vpMapPointMatches;
     mCurrentFrame.SetPose(mLastFrame.mTcw);
+   std::cout << "Track Reference KF: 2.5 " << std::endl; fflush(stdout);
 
     Optimizer::PoseOptimization(&mCurrentFrame);
+   std::cout << "Track Reference KF: 3 " << std::endl; fflush(stdout);
 
     // Discard outliers
     int nmatchesMap = 0;
