@@ -223,7 +223,6 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 
 cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, gtsam::Key key)
 {
-    std::cout << "Grab image rgbd " << std::endl; fflush(stdout);
     mImGray = imRGB;
     cv::Mat imDepth = imD;
 
@@ -536,7 +535,6 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
-    cout << "Frame Symbol: " << gtsam::symbolChr(mCurrentFrame.key_) << gtsam::symbolIndex(mCurrentFrame.key_)  << endl;
     //cout << "KF Symbol: " << gtsam::symbolChr(mpReferenceKF->key_) << gtsam::symbolIndex(mpReferenceKF->key_)  << endl;
 
 }
