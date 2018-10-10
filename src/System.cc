@@ -234,7 +234,6 @@ namespace ORB_SLAM2
     clock_t start = clock(); // Clock
     double duration;
     cv::Mat trackedPose =  mpTracker->GrabImageRGBD(im,depthmap,timestamp, key);
-    std::cout << "tracked " << std::endl; fflush(stdout);
     duration = (clock() - start)/(double)CLOCKS_PER_SEC;
     //std::cout << "mpTracker took: " << duration << " seconds" << std::endl;
 

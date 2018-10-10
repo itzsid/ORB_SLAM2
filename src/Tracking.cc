@@ -245,9 +245,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
 
-    std::cout << "reached 0" << std::endl; fflush(stdout);
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth, key);
-    std::cout << "reached 1" << std::endl; fflush(stdout);
     clock_t start = clock(); // Clock
     double duration;
     Track();
@@ -290,7 +288,6 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
-    cout << "Tracking 0"   << endl;
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -326,7 +323,6 @@ void Tracking::Track()
 
             if(mState==OK)
             {
-    cout << "Tracking 1"   << endl;
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 

@@ -238,7 +238,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
-    std::cout << "Optimizer 0" << std::endl;
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
@@ -362,7 +361,6 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     }
 
     
-    std::cout << "Optimizer 1" << std::endl;
     if(nInitialCorrespondences<3)
         return 0;
 
@@ -375,12 +373,10 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     int nBad=0;
     for(size_t it=0; it<4; it++)
     {
-    std::cout << "Optimizer it: " << it << std::endl;
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         optimizer.initializeOptimization(0);
         optimizer.optimize(its[it]);
-    std::cout << "Optimizer it 1: " << it << std::endl;
 
         nBad=0;
         for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
@@ -444,13 +440,11 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         if(optimizer.edges().size()<10)
             break;
     }    
-    std::cout << "Optimizer 2" << std::endl;
 
     // Recover optimized pose and return number of inliers
     g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
     g2o::SE3Quat SE3quat_recov = vSE3_recov->estimate();
     cv::Mat pose = Converter::toCvMat(SE3quat_recov);
-    std::cout << "Optimizer 3" << std::endl;
     pFrame->SetPose(pose);
 
     return nInitialCorrespondences-nBad;
